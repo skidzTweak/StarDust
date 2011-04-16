@@ -1,0 +1,313 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Aurora.DataManager;
+using Aurora.Framework;
+using log4net;
+using OpenMetaverse;
+using Nini.Config;
+using OpenSim.Framework;
+using StarDust.Currency.Interfaces;
+
+namespace StarDust.Currency.Grid.Dust
+{
+    public class DustLocalCurrencyConnector : IStarDustCurrencyConnector
+    {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private IGenericData m_gd;
+        private bool m_enabled;
+        private StarDustConfig m_options;
+
+        #region IAuroraDataPlugin
+
+        public void Initialize(IGenericData gd, IConfigSource source, IRegistryCore simBase, string defaultConnectionString)
+        {
+            if (source.Configs["AuroraConnectors"].GetString("CurrencyConnector", "LocalConnector") != "LocalConnector")
+                return;
+            m_gd = gd;
+
+            if (source.Configs["Handlers"].GetString("CurrencyHandler", "") != "StarDust")
+                return;
+
+            IConfig economyConfig = source.Configs["StarDustCurrency"];
+            m_enabled = ((economyConfig != null) &&
+                (economyConfig.GetString("CurrencyModule", "Dust") == "Dust") &&
+                (economyConfig.GetString("CurrencyConnector", "Local") == "Local"));
+
+            if (!m_enabled)
+                return;
+
+            if (source.Configs[Name] != null)
+                defaultConnectionString = source.Configs[Name].GetString("ConnectionString", defaultConnectionString);
+
+            gd.ConnectToDatabase(defaultConnectionString, "Currency", true);
+            DataManager.RegisterPlugin(Name, this);
+
+            m_options = new StarDustConfig(economyConfig);
+        }
+
+        public string Name
+        {
+            get { return "IStarDustCurrencyConnector"; }
+        }
+
+        public void Dispose()
+        {
+        }
+
+        #endregion
+
+        #region public currency functions
+
+        public StarDustUserCurrency GetUserCurrency(UUID agentId)
+        {
+            StarDustUserCurrency starDustUser = new StarDustUserCurrency { PrincipalID = agentId, Amount = 0, LandInUse = 0, Tier = 0 };
+            List<string> query = m_gd.Query("PrincipalID", agentId, "usercurrency", "*");
+
+            if (query.Count == 0)
+            {
+                UserCurrencyCreate(agentId);
+                return starDustUser;
+            }
+            starDustUser.FromArray(query);
+            return starDustUser;
+        }
+
+        public Transaction UserCurrencyTransaction(Transaction transaction)
+        {
+            UserCurrencyTransaction(transaction, out transaction);
+            return transaction;
+        }
+
+        public bool UserCurrencyUpdate(StarDustUserCurrency agent)
+        {
+            m_gd.Update("usercurrency", 
+                        new object[] {agent.LandInUse, agent.Tier}, 
+                        new[] {"LandInUse", "Tier"},
+                        new[] {"PrincipalID"}, 
+                        new object[] {agent.PrincipalID});
+            return true;
+        }
+
+        #endregion
+
+        #region purchase currency
+
+        /// <summary>
+        /// User purchased currency, we are saving it here. But it is not yet complete.
+        /// </summary>
+        /// <param name="purchaseID"></param>
+        /// <param name="principalID"></param>
+        /// <param name="userName"></param>
+        /// <param name="amount"></param>
+        /// <param name="conversionFactor"></param>
+        /// <param name="region"></param>
+        /// <returns></returns>
+        public bool UserCurrencyBuy(UUID purchaseID, UUID principalID, string userName, uint amount, float conversionFactor, RegionTransactionDetails region)
+        {
+            List<object> values = new List<object>
+            {
+                purchaseID.ToString(),                  // PurchaseID
+                principalID.ToString(),                 // PrincipalID
+                userName,                               // PrincipalID
+                amount,                                 // Amount
+                Convert.ToInt32(conversionFactor),// ConversionFactor
+                region.RegionName,                      // RegionName
+                region.RegionID.ToString(),             // RegionID
+                region.RegionPosition,                  // RegionPos
+                0,                                      // Complete
+                "",                                     // CompleteMethod
+                "",                                     // CompleteReference
+                "",                                     // TransactionID
+                Utils.GetUnixTime(),                    // Created
+                Utils.GetUnixTime(),                     // Updated
+                ""                                     // pyapal raw data
+            };
+            m_gd.Insert("usercurrency_purchased", values.ToArray());
+            return true;
+        }
+
+        /// <summary>
+        /// This function transfered a past purchase of money to their account
+        /// </summary>
+        /// <param name="purchaseID"></param>
+        /// <param name="completeMethod"></param>
+        /// <param name="completeReference"></param>
+        /// <returns></returns>
+        public bool UserCurrencyBuyComplete(UUID purchaseID, string completeMethod, string completeReference)
+        {
+            Transaction trans = TransactionFromPurchase(purchaseID);
+            if (trans.Complete == 0)
+            {
+                if (UserCurrencyTransaction(trans, out trans))
+                {
+                    m_gd.Update("usercurrency_purchased",
+                                new object[] { trans.TransactionID, 1, completeMethod, completeReference, Utils.GetUnixTime() },
+                                new[] {"TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated"},
+                                new[] {"PurchaseID"},
+                                new object[] {purchaseID.ToString()});
+                    return true;
+                }
+                return false;
+            }
+            m_log.WarnFormat("[DustLocalCurrencyConnector] Purchase ID {0} is already complete", purchaseID);
+            return false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="purchaseID"></param>
+        /// <returns></returns>
+        private Transaction TransactionFromPurchase(UUID purchaseID)
+        {
+            List<string> query = m_gd.Query("PurchaseID", purchaseID, "usercurrency_purchased",
+                                            "Amount, Complete, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName");
+            if (query.Count == 0)
+            {
+                m_log.Warn("[DustLocalCurrencyConnector] Purchase ID not found");
+                return new Transaction();
+            }
+            return new Transaction
+            {
+                Amount = uint.Parse(query[0]),
+                Updated = Utils.GetUnixTime(),
+                Complete = int.Parse(query[1]),
+                Created = Utils.GetUnixTime(),
+                FromID = m_options.BankerPrincipalID,
+                FromName = "Banker",
+                Region = new RegionTransactionDetails
+                             {
+                                 RegionID = UUID.Parse(query[5]),
+                                 RegionName = query[4],
+                                 RegionPosition = query[6]
+                             },
+                ToID = UUID.Parse(query[3]),
+                ToName = query[7],
+                Description = "Purchase of Currency."
+            };
+        }
+
+        #endregion
+
+        #region private currency handlers
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="transaction"></param>
+        /// <param name="trans"></param>
+        /// <returns></returns>
+        private bool UserCurrencyTransaction(Transaction transaction, out Transaction trans)
+        {
+            // write the history
+            if (!WriteHistory(transaction, out transaction))
+            {
+                trans = transaction;
+                return false;
+            }
+
+            // get users currency
+            StarDustUserCurrency toBalance = GetUserCurrency(new UUID(transaction.ToID));
+            StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
+
+            // Ensure sender has enough money
+            if (fromBalance.Amount - transaction.Amount < 0)
+            {
+                transaction.Complete = 0;
+                transaction.CompleteReason = "Send amount is greater than sender has";
+                WriteHistory(transaction, out transaction);
+                trans = transaction;
+                return false;
+            }
+
+            // update sender
+            m_gd.Update("usercurrency", new object[] { fromBalance.Amount - transaction.Amount },
+                        new[] { "Amount" }, new[] { "PrincipalID" },
+                        new object[] { transaction.FromID });
+
+            // update receiver
+            m_gd.Update("usercurrency", new object[] { toBalance.Amount + transaction.Amount },
+                        new[] { "Amount" }, new[] { "PrincipalID" },
+                        new object[] { transaction.ToID });
+
+            // update logs
+            transaction.Complete = 1;
+            transaction.CompleteReason = "";
+
+            transaction.ToBalance = toBalance.Amount + transaction.Amount;
+            transaction.FromBalance = fromBalance.Amount - transaction.Amount;
+
+
+            WriteHistory(transaction, out transaction);
+
+            trans = transaction;
+            return true;
+        }
+
+        private bool WriteHistory(Transaction transaction, out Transaction trans)
+        {
+            // since this is always the first thing that happens.. might as well confirm it here
+            if (transaction.FromID == UUID.Zero)
+            {
+                m_log.Warn("[DustLocalCurrencyConnector] WriteHistory does not have from user data. FromName, and From Principle ID are required");
+                trans = transaction;
+                return false;
+            }
+            if (transaction.ToID == UUID.Zero)
+            {
+                m_log.Warn("[DustLocalCurrencyConnector] WriteHistory does not have to user data. ToName, and To Principle ID are required");
+                trans = transaction;
+                return false;
+            }
+
+            if (transaction.TransactionID != UUID.Zero)
+            {
+                m_gd.Update("usercurrency_history",
+                            new object[] {transaction.Complete, transaction.CompleteReason, Utils.GetUnixTime(), transaction.ToBalance, transaction.FromBalance},
+                            new[] {"Complete", "CompleteReason", "Updated", "ToBalance", "FromBalance"}, 
+                            new[] {"TransactionID"},
+                            new object[] {transaction.TransactionID});
+                trans = transaction;
+                return true;
+            }
+
+            transaction.TransactionID = UUID.Random();
+
+            m_gd.Insert("usercurrency_history", new object[]
+            {
+                transaction.TransactionID,              // TransactionID
+                transaction.Description,                // Description
+                transaction.FromID,                     // FromPrincipalID
+                transaction.FromName,                   // FromName
+                transaction.FromObjectID,               // FromObjectID
+                transaction.FromObjectName,             // FromObjectName
+                transaction.ToID,                       // ToPrincipalID
+                transaction.ToName,                     // ToName
+                transaction.ToObjectID,                 // ToObjectID
+                transaction.ToObjectName,               // ToObjectName
+                transaction.Amount,                     // Amount
+                transaction.Complete,                   // Complete
+                transaction.CompleteReason,             // CompleteReason
+                transaction.Region.RegionName,          // RegionName
+                transaction.Region.RegionID,            // RegionID
+                transaction.Region.RegionPosition,      // RegionPos
+                transaction.TypeOfTrans,                // TransType 
+                Utils.GetUnixTime(),                    // Created
+                Utils.GetUnixTime(),                     // Updated
+                0,                                      //ToBalance
+                0                                       //FromBalance
+            });
+            trans = transaction;
+            return true;
+        }
+
+        private void UserCurrencyCreate(UUID agentId)
+        {
+            m_gd.Insert("usercurrency", new object[] { agentId.ToString(), 0, 0, 0 });
+        }
+        #endregion
+
+        
+    }
+}

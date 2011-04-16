@@ -1,0 +1,5 @@
+D:\aurora\admin\production-a400fff67ed45581de5a\Aurora-Sim\bin\StarDust.Currency.dll
+D:\aurora\admin\production-a400fff67ed45581de5a\Aurora-Sim\bin\StarDust.Currency.pdb
+D:\aurora\admin\production-a400fff67ed45581de5a\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\x86\Debug\ResolveAssemblyReference.cache
+D:\aurora\admin\production-a400fff67ed45581de5a\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\x86\Debug\StarDust.Currency.dll
+D:\aurora\admin\production-a400fff67ed45581de5a\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\x86\Debug\StarDust.Currency.pdb
