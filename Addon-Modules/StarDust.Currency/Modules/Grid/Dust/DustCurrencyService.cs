@@ -45,7 +45,8 @@ namespace StarDust.Currency.Grid.Dust
             m_options = new StarDustConfig(source.Configs["StarDustCurrency"]);
 
             IHttpServer server;
-            if (source.Configs["Handlers"].GetBoolean("UnsecureUrls", false))
+            IConfig handlerConfig = source.Configs["Handlers"];
+            if (handlerConfig.GetBoolean("UnsecureUrls", false))
             {
                 // have not tested any of this
                 server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
@@ -62,6 +63,11 @@ namespace StarDust.Currency.Grid.Dust
             server.AddXmlRPCHandler("preflightBuyLandPrep", PreflightBuyLandPrepFunc);
             server.AddXmlRPCHandler("buyLandPrep", LandBuyFunc);
             server.AddXmlRPCHandler("getBalance", GetbalanceFunc);
+
+            string Password = handlerConfig.GetString("WireduxHandlerPassword", String.Empty);
+            if (Password == "") return;
+            IHttpServer m_server = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(handlerConfig.GetUInt("WireduxHandlerPort"));
+            m_server.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry, Password, m_options));
         }
 
         public void Start(IConfigSource config, IRegistryCore registry)
@@ -174,9 +180,10 @@ namespace StarDust.Currency.Grid.Dust
                                                              }
                                                              );
 
+                        Transaction transaction;
                         if (m_options.AutoApplyCurrency && success)
-                            m_database.UserCurrencyBuyComplete(purchaseID, "AutoComplete",
-                                                               m_options.AutoApplyCurrency.ToString());
+                            m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete", m_options.AutoApplyCurrency.ToString(), "Auto Complete", out transaction);
+                        
 
                         if (success && m_options.AfterCurrencyPurchaseMessage != string.Empty)
                             SendGridMessage(agentId, String.Format(m_options.AfterCurrencyPurchaseMessage, purchaseID.ToString()), false, UUID.Zero);
@@ -395,6 +402,42 @@ namespace StarDust.Currency.Grid.Dust
             m_options.CurrencyInHandlerPort = server.Port;
             server.AddStreamHandler(new StarDustCurrencyPostHandler(url, this, regionHandle, m_registry));
             m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}{1} ", server.HostName, server.Port);
+        }
+
+        #endregion
+
+        #region WebUI Functions
+
+        public bool FinishPurchase(OSDMap PayPalResponse, string rawResponse)
+        {
+            Transaction transaction;
+            int purchaseType;
+            if (m_database.FinishPurchase(PayPalResponse, rawResponse, out transaction, out purchaseType))
+            {
+                if (purchaseType == 1)
+                {
+                    if (UserCurrencyTransfer(transaction.ToID, m_options.BankerPrincipalID, UUID.Zero, UUID.Zero,
+                                                 transaction.Amount, "Currency Purchase",
+                                                 TransactionType.SystemGenerated))
+                    {
+                        return true;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public OSDMap PrePurchaseCheck(UUID purchaseId)
+        {
+            return m_database.PrePurchaseCheck(purchaseId);
+        }
+
+        public OSDMap OrderSubscription(UUID toId, string RegionName, string notes, string subscription_id)
+        {
+
+            string toName = GetUserAccount(toId).Name;
+            return m_database.OrderSubscription(toId, toName, RegionName, notes, subscription_id);
         }
 
         #endregion

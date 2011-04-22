@@ -64,7 +64,7 @@ namespace StarDust.Currency.Region
         {
             return new StarDustUserCurrency(MakeCallOSDMAP(new OSDMap
                                                                {
-                                                                   {"Method", "usercurrencyinfo"},
+                                                                   {"Method", "stardust_currencyinfo"},
                                                                    {"AgentId", agentId}
                                                                }, "UserCurrencyInfo"));
         }
@@ -72,13 +72,13 @@ namespace StarDust.Currency.Region
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
             OSDMap osdMap = agent.ToOSD();
-            osdMap.Add("Method", "usercurrencyupdate");
+            osdMap.Add("Method", "stardust_currencyupdate");
             return MakeCall(osdMap, "UserCurrencyUpdate");
         }
 
         public Transaction UserCurrencyTransfer(Transaction transaction)
         {
-            return new Transaction(MakeCallOSDMAP(transaction.ToOSD("Method", "usercurrencytransfer"), "UserCurrencyTransaction"));
+            return new Transaction(MakeCallOSDMAP(transaction.ToOSD("Method", "stardust_currencytransfer"), "UserCurrencyTransaction"));
         }
 
         public StarDustConfig GetConfig()
@@ -99,6 +99,21 @@ namespace StarDust.Currency.Region
                                     {"goDeep", goDeep},
                                     {"transactionId", transactionId}
                                 }, "UserCurrencyUpdate");
+        }
+
+        public bool FinishPurchase(OSDMap resp, string rawResponse)
+        {
+            throw new NotImplementedException();
+        }
+
+        public OSDMap PrePurchaseCheck(UUID purchaseId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public OSDMap OrderSubscription(UUID toId, string regionName, string notes, string subscriptionID)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

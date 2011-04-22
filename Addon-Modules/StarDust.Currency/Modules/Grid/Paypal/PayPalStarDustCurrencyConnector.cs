@@ -41,6 +41,7 @@ using OpenMetaverse;
 using Aurora.Framework;
 using Aurora.Simulation.Base;
 using Nini.Config;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Services.Interfaces;
@@ -242,9 +243,8 @@ namespace StarDust.Currency.Grid.Paypal
             m_log.Info ("[PayPal] Fetching email address from grid for " + key);
 
             IUserAccountService userAccountService = m_scenes[0].UserAccountService;
-            UserAccount ua;
 
-            ua = userAccountService.GetUserAccount (scope, key);
+            UserAccount ua = userAccountService.GetUserAccount (scope, key);
 
             if (ua == null)
                 return false;
@@ -268,12 +268,27 @@ namespace StarDust.Currency.Grid.Paypal
             throw new NotImplementedException();
         }
 
-        public bool UserCurrencyBuyComplete(UUID purchaseID, string completeMethod, string completeReference)
+        public bool UserCurrencyBuyComplete(UUID purchaseID, int isComplete, string completeMethod, string completeReference, string rawdata, out Transaction transaction)
         {
             throw new NotImplementedException();
         }
 
         public Transaction UserCurrencyTransaction(Transaction transaction)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool FinishPurchase(OSDMap payPalResponse, string raw, out Transaction transaction, out int purchaseType)
+        {
+            throw new NotImplementedException();
+        }
+
+        public OSDMap PrePurchaseCheck(UUID purchaseID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public OSDMap OrderSubscription(UUID toId, string toName, string regionName, string notes, string subscriptionID)
         {
             throw new NotImplementedException();
         }

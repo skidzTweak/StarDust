@@ -40,6 +40,8 @@ namespace StarDust.Currency.Interfaces
         private string m_messgeBeforeBuyLand = "";
         private int m_AdditionPercentage = 291;
         private int m_AdditionAmount = 30;
+        private string m_payPalAuthToken = "";
+        private string m_payPalUrl = "";
 
         #endregion
         #region functions
@@ -271,6 +273,18 @@ namespace StarDust.Currency.Interfaces
         {
             get { return m_AdditionAmount; }
             set { m_AdditionAmount = value; }
+        }
+
+        public string PayPalAuthToken
+        {
+            get { return m_payPalAuthToken; }
+            set { m_payPalAuthToken = value; }
+        }
+
+        public string PayPalURL
+        {
+            get { return m_payPalUrl; }
+            set { m_payPalUrl = value; }
         }
 
         #endregion

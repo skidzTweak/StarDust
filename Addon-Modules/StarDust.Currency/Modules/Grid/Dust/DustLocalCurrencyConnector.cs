@@ -6,6 +6,7 @@ using Aurora.Framework;
 using log4net;
 using OpenMetaverse;
 using Nini.Config;
+using OpenMetaverse.StructuredData;
 using OpenSim.Framework;
 using StarDust.Currency.Interfaces;
 
@@ -62,7 +63,7 @@ namespace StarDust.Currency.Grid.Dust
         public StarDustUserCurrency GetUserCurrency(UUID agentId)
         {
             StarDustUserCurrency starDustUser = new StarDustUserCurrency { PrincipalID = agentId, Amount = 0, LandInUse = 0, Tier = 0 };
-            List<string> query = m_gd.Query("PrincipalID", agentId, "usercurrency", "*");
+            List<string> query = m_gd.Query("PrincipalID", agentId, "stardust_currency", "*");
 
             if (query.Count == 0)
             {
@@ -81,7 +82,7 @@ namespace StarDust.Currency.Grid.Dust
 
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
-            m_gd.Update("usercurrency", 
+            m_gd.Update("stardust_currency", 
                         new object[] {agent.LandInUse, agent.Tier}, 
                         new[] {"LandInUse", "Tier"},
                         new[] {"PrincipalID"}, 
@@ -108,9 +109,11 @@ namespace StarDust.Currency.Grid.Dust
             List<object> values = new List<object>
             {
                 purchaseID.ToString(),                  // PurchaseID
+                1,                                      // PurchaseType
                 principalID.ToString(),                 // PrincipalID
                 userName,                               // PrincipalID
                 amount,                                 // Amount
+                Convert.ToInt32(Math.Round(((float.Parse(amount.ToString()) / m_options.RealCurrencyConversionFactor) + ((float.Parse(amount.ToString()) / m_options.RealCurrencyConversionFactor) * (m_options.AdditionPercentage / 10000.0)) + (m_options.AdditionAmount / 100.0)) * 100)),
                 Convert.ToInt32(conversionFactor),// ConversionFactor
                 region.RegionName,                      // RegionName
                 region.RegionID.ToString(),             // RegionID
@@ -121,9 +124,10 @@ namespace StarDust.Currency.Grid.Dust
                 "",                                     // TransactionID
                 Utils.GetUnixTime(),                    // Created
                 Utils.GetUnixTime(),                     // Updated
-                ""                                     // pyapal raw data
+                "",                                     // pyapal raw data
+                ""                                     //notes
             };
-            m_gd.Insert("usercurrency_purchased", values.ToArray());
+            m_gd.Insert("stardust_purchased", values.ToArray());
             return true;
         }
 
@@ -131,25 +135,31 @@ namespace StarDust.Currency.Grid.Dust
         /// This function transfered a past purchase of money to their account
         /// </summary>
         /// <param name="purchaseID"></param>
+        /// <param name="isComplete"></param>
         /// <param name="completeMethod"></param>
         /// <param name="completeReference"></param>
+        /// <param name="rawdata"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
-        public bool UserCurrencyBuyComplete(UUID purchaseID, string completeMethod, string completeReference)
+        public bool UserCurrencyBuyComplete(UUID purchaseID, int isComplete, string completeMethod, string completeReference, string rawdata, out Transaction transaction)
         {
             Transaction trans = TransactionFromPurchase(purchaseID);
             if (trans.Complete == 0)
             {
                 if (UserCurrencyTransaction(trans, out trans))
                 {
-                    m_gd.Update("usercurrency_purchased",
-                                new object[] { trans.TransactionID, 1, completeMethod, completeReference, Utils.GetUnixTime() },
+                    m_gd.Update("stardust_purchased",
+                                new object[] { trans.TransactionID, isComplete, completeMethod, completeReference, Utils.GetUnixTime() },
                                 new[] {"TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated"},
                                 new[] {"PurchaseID"},
                                 new object[] {purchaseID.ToString()});
+                    transaction = trans;
                     return true;
                 }
+                transaction = trans;
                 return false;
             }
+            transaction = trans;
             m_log.WarnFormat("[DustLocalCurrencyConnector] Purchase ID {0} is already complete", purchaseID);
             return false;
         }
@@ -161,31 +171,138 @@ namespace StarDust.Currency.Grid.Dust
         /// <returns></returns>
         private Transaction TransactionFromPurchase(UUID purchaseID)
         {
-            List<string> query = m_gd.Query("PurchaseID", purchaseID, "usercurrency_purchased",
-                                            "Amount, Complete, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName");
+            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
+                                            "Amount, Complete, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName, PurchaseType");
             if (query.Count == 0)
             {
                 m_log.Warn("[DustLocalCurrencyConnector] Purchase ID not found");
                 return new Transaction();
             }
             return new Transaction
-            {
-                Amount = uint.Parse(query[0]),
-                Updated = Utils.GetUnixTime(),
-                Complete = int.Parse(query[1]),
-                Created = Utils.GetUnixTime(),
-                FromID = m_options.BankerPrincipalID,
-                FromName = "Banker",
-                Region = new RegionTransactionDetails
-                             {
-                                 RegionID = UUID.Parse(query[5]),
-                                 RegionName = query[4],
-                                 RegionPosition = query[6]
-                             },
-                ToID = UUID.Parse(query[3]),
-                ToName = query[7],
-                Description = "Purchase of Currency."
+                       {
+                           Amount = uint.Parse(query[0]),
+                           Updated = Utils.GetUnixTime(),
+                           Complete = int.Parse(query[1]),
+                           Created = Utils.GetUnixTime(),
+                           FromID = m_options.BankerPrincipalID,
+                           FromName = "Banker",
+                           Region = new RegionTransactionDetails
+                                        {
+                                            RegionID = UUID.Parse(query[5]),
+                                            RegionName = query[4],
+                                            RegionPosition = query[6]
+                                        },
+                           ToID = UUID.Parse(query[3]),
+                           ToName = query[7],
+                           Description = (query[6] == "1") ? "Purchase Currency" : "Purchase Region"
             };
+        }
+
+        public bool FinishPurchase(OSDMap payPalResponse, string raw, out Transaction transaction, out int purchaseType)
+        {
+            UUID purchaseID = payPalResponse["custom"].AsUUID();
+            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
+                                            "Amount, Complete, PurchaseType, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName, USDAmount");
+            if (query.Count != 10)
+            {
+                m_log.Error("No such purchase ID");
+                transaction = null;
+                purchaseType = -1;
+                return false;
+            }
+            if (query[1] == "1")
+            {
+                m_log.Error("This purchase has already been completed");
+                transaction = null;
+                purchaseType = -1;
+                return false;
+            }
+            if (payPalResponse["payment_status"].AsString() != "Completed")
+            {
+                Transaction transaction_temp1;
+                UserCurrencyBuyComplete(purchaseID, 0, "payment_status = " + payPalResponse["payment_status"].AsString(),
+                                        payPalResponse["txn_id"].AsString(), raw, out transaction_temp1);
+                transaction = transaction_temp1;
+                purchaseType = -1;
+                return false;
+            }
+            Transaction transaction_temp2;
+            if (
+                !UserCurrencyBuyComplete(purchaseID, 1, "PayPal", payPalResponse["txn_id"].AsString(), raw,
+                                         out transaction_temp2))
+            {
+                transaction = null;
+                purchaseType = -1;
+                return false;
+            }
+            transaction = transaction_temp2;
+            purchaseType = int.Parse(query[2]);
+            return true;
+        }
+
+        public OSDMap PrePurchaseCheck(UUID purchaseID)
+        {
+            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
+                                            "Amount, Complete, PurchaseType, PrincipalID, RegionName, ConversionFactor, USDAmount");
+
+            if (query.Count > 0)
+            {
+                return new OSDMap
+                           {
+                               {"Amount", query[0]},
+                               {"Complete", query[1]},
+                               {"PurchaseType", query[2]},
+                               {"PrincipalID", query[3]},
+                               {"RegionName", query[4]},
+                               {"ConversionFactor", query[5]},
+                               {"USDAmount", query[6]}
+                           };
+            }
+            return new OSDMap();
+        }
+
+        public OSDMap OrderSubscription(UUID toId, string toName, string RegionName, string notes, string subscription_id)
+        {
+            List<string> query = m_gd.Query("id", subscription_id, "stardust_subscriptions",
+                                            "name, description, price, active");
+            OSDMap response = new OSDMap();
+            if (query.Count == 4)
+            {
+
+                response = new OSDMap
+                                      {
+                                          {"name", query[0]},
+                                          {"description", query[1]},
+                                          {"price", query[2]},
+                                          {"active", query[3]}
+                                      };
+                string price = query[2];
+                UUID purchaseID = UUID.Random();
+                response.Add("purchaseID", purchaseID);
+                List<object> values = new List<object>
+                                          {
+                                              purchaseID.ToString(),// PurchaseID
+                                              2,// PurchaseType
+                                              toId.ToString(),// PrincipalID
+                                              toName,// PrincipalID
+                                              0,// Amount
+                                              response["price"],//USDAmount
+                                              0,// ConversionFactor
+                                              RegionName,// RegionName
+                                              UUID.Zero.ToString(),// RegionID
+                                              "",// RegionPos
+                                              0,// Complete
+                                              "",// CompleteMethod
+                                              "",// CompleteReference
+                                              "",// TransactionID
+                                              Utils.GetUnixTime(),// Created
+                                              Utils.GetUnixTime(),// Updated
+                                              "", // pyapal raw data
+                                              notes //notes
+                                          };
+                m_gd.Insert("stardust_purchased", values.ToArray());
+            }
+            return response;
         }
 
         #endregion
@@ -212,7 +329,7 @@ namespace StarDust.Currency.Grid.Dust
             StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
 
             // Ensure sender has enough money
-            if (fromBalance.Amount - transaction.Amount < 0)
+            if (fromBalance.Amount < transaction.Amount)
             {
                 transaction.Complete = 0;
                 transaction.CompleteReason = "Send amount is greater than sender has";
@@ -222,12 +339,12 @@ namespace StarDust.Currency.Grid.Dust
             }
 
             // update sender
-            m_gd.Update("usercurrency", new object[] { fromBalance.Amount - transaction.Amount },
+            m_gd.Update("stardust_currency", new object[] { fromBalance.Amount - transaction.Amount },
                         new[] { "Amount" }, new[] { "PrincipalID" },
                         new object[] { transaction.FromID });
 
             // update receiver
-            m_gd.Update("usercurrency", new object[] { toBalance.Amount + transaction.Amount },
+            m_gd.Update("stardust_currency", new object[] { toBalance.Amount + transaction.Amount },
                         new[] { "Amount" }, new[] { "PrincipalID" },
                         new object[] { transaction.ToID });
 
@@ -263,7 +380,7 @@ namespace StarDust.Currency.Grid.Dust
 
             if (transaction.TransactionID != UUID.Zero)
             {
-                m_gd.Update("usercurrency_history",
+                m_gd.Update("stardust_currency_history",
                             new object[] {transaction.Complete, transaction.CompleteReason, Utils.GetUnixTime(), transaction.ToBalance, transaction.FromBalance},
                             new[] {"Complete", "CompleteReason", "Updated", "ToBalance", "FromBalance"}, 
                             new[] {"TransactionID"},
@@ -274,7 +391,7 @@ namespace StarDust.Currency.Grid.Dust
 
             transaction.TransactionID = UUID.Random();
 
-            m_gd.Insert("usercurrency_history", new object[]
+            m_gd.Insert("stardust_currency_history", new object[]
             {
                 transaction.TransactionID,              // TransactionID
                 transaction.Description,                // Description
@@ -304,7 +421,7 @@ namespace StarDust.Currency.Grid.Dust
 
         private void UserCurrencyCreate(UUID agentId)
         {
-            m_gd.Insert("usercurrency", new object[] { agentId.ToString(), 0, 0, 0 });
+            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0 });
         }
         #endregion
 

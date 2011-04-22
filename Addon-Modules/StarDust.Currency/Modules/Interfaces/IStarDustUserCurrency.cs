@@ -244,6 +244,11 @@ namespace StarDust.Currency.Interfaces
         StarDustConfig GetConfig();
 
         bool SendGridMessage(UUID toID, string message, bool goDeep, UUID transactionId);
+
+        bool FinishPurchase(OSDMap resp, string rawResponse);
+
+        OSDMap PrePurchaseCheck(UUID purchaseId);
+        OSDMap OrderSubscription(UUID toId, string regionName, string notes, string subscriptionID);
     }
 
     public interface IStarDustCurrencyConnector : IAuroraDataPlugin
@@ -277,10 +282,13 @@ namespace StarDust.Currency.Interfaces
         /// 
         /// </summary>
         /// <param name="purchaseID"></param>
+        /// <param name="isComplete"></param>
         /// <param name="completeMethod"></param>
         /// <param name="completeReference"></param>
+        /// <param name="rawdata"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
-        bool UserCurrencyBuyComplete(UUID purchaseID, string completeMethod, string completeReference);
+        bool UserCurrencyBuyComplete(UUID purchaseID, int isComplete, string completeMethod, string completeReference, string rawdata, out Transaction transaction);
 
         /// <summary>
         /// 
@@ -288,5 +296,12 @@ namespace StarDust.Currency.Interfaces
         /// <param name="transaction"></param>
         /// <returns></returns>
         Transaction UserCurrencyTransaction(Transaction transaction);
+
+        bool FinishPurchase(OSDMap payPalResponse, string raw, out Transaction transaction, out int purchaseType);
+
+        OSDMap PrePurchaseCheck(UUID purchaseID);
+
+
+        OSDMap OrderSubscription(UUID toId, string toName, string regionName, string notes, string subscriptionID);
     }
 }

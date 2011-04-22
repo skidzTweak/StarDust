@@ -48,3 +48,8 @@ C:\aurora\admin\production-c60a2cd5ddee4ae74a18\Aurora-Sim\bin\StarDust.Currency
 C:\aurora\admin\production-c60a2cd5ddee4ae74a18\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\ResolveAssemblyReference.cache
 C:\aurora\admin\production-c60a2cd5ddee4ae74a18\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\StarDust.Currency.dll
 C:\aurora\admin\production-c60a2cd5ddee4ae74a18\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\StarDust.Currency.pdb
+C:\aurora\admin\production-1a480dbdff7fe50ac59f\Aurora-Sim\bin\StarDust.Currency.dll
+C:\aurora\admin\production-1a480dbdff7fe50ac59f\Aurora-Sim\bin\StarDust.Currency.pdb
+C:\aurora\admin\production-1a480dbdff7fe50ac59f\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\ResolveAssemblyReference.cache
+C:\aurora\admin\production-1a480dbdff7fe50ac59f\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\StarDust.Currency.dll
+C:\aurora\admin\production-1a480dbdff7fe50ac59f\Aurora-Sim\addon-modules\StarDust.Currency\Modules\obj\Debug\StarDust.Currency.pdb

@@ -15,17 +15,20 @@ namespace StarDust.Currency.Grid.Dust
 
             schema = new List<Rec<string, ColumnDefinition[]>>();
 
-            AddSchema("usercurrency", ColDefs(
+            AddSchema("stardust_currency", ColDefs(
                 ColDef("PrincipalID", ColumnTypes.String50, true),
                 ColDef("Amount", ColumnTypes.Integer30),
                 ColDef("LandInUse", ColumnTypes.Integer30),
                 ColDef("Tier", ColumnTypes.Integer30)));
 
-            AddSchema("usercurrency_purchased", ColDefs(
+            // this is actually used for all purchases now.. a better name would be _purchased
+            AddSchema("stardust_purchased", ColDefs(
                 ColDef("PurchaseID", ColumnTypes.String36, true),
-                ColDef("PrincipalID", ColumnTypes.String36, true),
-                ColDef("UserName", ColumnTypes.String128, true),
+                ColDef("PurchaseType", ColumnTypes.Integer11),
+                ColDef("PrincipalID", ColumnTypes.String36),
+                ColDef("UserName", ColumnTypes.String128),
                 ColDef("Amount", ColumnTypes.Integer30),
+                ColDef("USDAmount", ColumnTypes.Integer30),
                 ColDef("ConversionFactor", ColumnTypes.Integer30),
                 ColDef("RegionName", ColumnTypes.String128),
                 ColDef("RegionID", ColumnTypes.String36),
@@ -36,19 +39,21 @@ namespace StarDust.Currency.Grid.Dust
                 ColDef("TransactionID", ColumnTypes.String36),
                 ColDef("Created", ColumnTypes.Integer30),
                 ColDef("Updated", ColumnTypes.Integer30),
-                ColDef("raw_paypal_transaction_data", ColumnTypes.Text)));
+                ColDef("RawPayPalTransactionData", ColumnTypes.Text),
+                ColDef("Notes", ColumnTypes.Text)
+                ));
 
-            AddSchema("usercurrency_history", ColDefs(
+            AddSchema("stardust_currency_history", ColDefs(
                 ColDef("TransactionID", ColumnTypes.String36, true),
-                ColDef("Description", ColumnTypes.String128, true),
+                ColDef("Description", ColumnTypes.String128),
                 ColDef("FromPrincipalID", ColumnTypes.String36, true),
-                ColDef("FromName", ColumnTypes.String128, true),
-                ColDef("FromObjectID", ColumnTypes.String36, true),
-                ColDef("FromObjectName", ColumnTypes.String128, true),
+                ColDef("FromName", ColumnTypes.String128),
+                ColDef("FromObjectID", ColumnTypes.String36),
+                ColDef("FromObjectName", ColumnTypes.String128),
                 ColDef("ToPrincipalID", ColumnTypes.String36, true),
-                ColDef("ToName", ColumnTypes.String36, true),
-                ColDef("ToObjectID", ColumnTypes.String36, true),
-                ColDef("ToObjectName", ColumnTypes.String128, true),
+                ColDef("ToName", ColumnTypes.String36),
+                ColDef("ToObjectID", ColumnTypes.String36),
+                ColDef("ToObjectName", ColumnTypes.String128),
                 ColDef("Amount", ColumnTypes.Integer30),
                 ColDef("Complete", ColumnTypes.Integer11),
                 ColDef("CompleteReason", ColumnTypes.String128),
@@ -61,7 +66,16 @@ namespace StarDust.Currency.Grid.Dust
                 ColDef("ToBalance", ColumnTypes.Integer30),
                 ColDef("FromBalance", ColumnTypes.Integer30)
                 )
-                ); 
+                );
+
+            AddSchema("stardust_subscriptions", ColDefs(
+                ColDef("id", ColumnTypes.String36, true),
+                ColDef("name", ColumnTypes.String64),
+                ColDef("description", ColumnTypes.String1024),
+                ColDef("price", ColumnTypes.Integer11),
+                ColDef("active", ColumnTypes.Integer11)
+                )
+                );
         }
 
         protected override void DoCreateDefaults(IDataConnector genericData)
