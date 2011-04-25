@@ -404,6 +404,12 @@ namespace StarDust.Currency.Grid.Dust
             m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}{1} ", server.HostName, server.Port);
         }
 
+        public void RemoveUrlForClient(ulong regionHandle, string sessionID, string url)
+        {
+            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
+            server.RemoveHTTPHandler("POST", url);
+        }
+
         #endregion
 
         #region WebUI Functions
