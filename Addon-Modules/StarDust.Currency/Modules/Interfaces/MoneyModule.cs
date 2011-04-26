@@ -304,6 +304,22 @@ namespace StarDust.Currency.Interfaces
                             : "Remote" == isGridServer;
             m_enabled = (m_enabled &&
                 (source.Configs["Handlers"].GetString("CurrencyHandler", "") == "StarDust"));
+            if (!m_enabled)
+            {
+                m_log.Info("Stardust is not loading.");
+                m_log.Info("CurrencyHandler = " + source.Configs["Handlers"].GetString("CurrencyHandler", "") + " " + ((source.Configs["Handlers"].GetString("CurrencyHandler", "") != "StarDust") ? "Bad" : "Good"));
+                if ("Remote" != isGridServer)
+                {
+                    m_log.Info("economyConfig = " + (economyConfig == null) + " " +
+                               ((economyConfig == null) ? "Bad" : "Good"));
+                    if (economyConfig == null) return m_enabled;
+                    m_log.Info("CurrencyConnector = " + economyConfig.GetString("CurrencyConnector", "Remote") + " " +
+                               ((economyConfig.GetString("CurrencyConnector", "Remote") != isGridServer)
+                                    ? "Bad"
+                                    : "Good"));
+                }
+                m_log.Info("End StarDust Info");
+            }
             return m_enabled;
         }
 

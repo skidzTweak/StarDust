@@ -325,7 +325,7 @@ namespace StarDust.Currency.Grid.Dust
             }
 
             // get users currency
-            StarDustUserCurrency toBalance = GetUserCurrency(new UUID(transaction.ToID));
+
             StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
 
             // Ensure sender has enough money
@@ -342,6 +342,8 @@ namespace StarDust.Currency.Grid.Dust
             m_gd.Update("stardust_currency", new object[] { fromBalance.Amount - transaction.Amount },
                         new[] { "Amount" }, new[] { "PrincipalID" },
                         new object[] { transaction.FromID });
+
+            StarDustUserCurrency toBalance = GetUserCurrency(new UUID(transaction.ToID));
 
             // update receiver
             m_gd.Update("stardust_currency", new object[] { toBalance.Amount + transaction.Amount },
