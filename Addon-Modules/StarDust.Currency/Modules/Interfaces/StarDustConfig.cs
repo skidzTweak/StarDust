@@ -58,6 +58,8 @@ namespace StarDust.Currency.Interfaces
                     propertyInfo.SetValue(this, economyConfig.GetBoolean(propertyInfo.Name, bool.Parse(propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
                 else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
                     propertyInfo.SetValue(this, economyConfig.GetString(propertyInfo.Name, propertyInfo.GetValue(this, new object[0]).ToString()), new object[0]);
+                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
+                    propertyInfo.SetValue(this, new UUID(economyConfig.GetString(propertyInfo.Name, propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
             }
         }
 
@@ -79,6 +81,8 @@ namespace StarDust.Currency.Interfaces
                     returnvalue.Add(propertyInfo.Name, (bool)propertyInfo.GetValue(this, new object[0]));
                 else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
                     returnvalue.Add(propertyInfo.Name, (string)propertyInfo.GetValue(this, new object[0]));
+                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
+                    returnvalue.Add(propertyInfo.Name, (UUID)propertyInfo.GetValue(this, new object[0]));
                 
             }
             return returnvalue;
@@ -97,6 +101,8 @@ namespace StarDust.Currency.Interfaces
                     propertyInfo.SetValue(this, values[propertyInfo.Name].AsBoolean(), new object[0]);
                 else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
                     propertyInfo.SetValue(this, values[propertyInfo.Name].AsString(), new object[0]);
+                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
+                    propertyInfo.SetValue(this, values[propertyInfo.Name].AsUUID(), new object[0]);
             }
         }
         #endregion

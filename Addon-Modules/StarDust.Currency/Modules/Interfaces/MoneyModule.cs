@@ -27,7 +27,7 @@ namespace StarDust.Currency.Interfaces
 
         public bool ObjectGiveMoney(UUID fromObjectID, UUID fromID, UUID toID, int amount)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay, UUID.Random());
         }
 
         public virtual int Balance(IClientAPI client)
@@ -46,22 +46,22 @@ namespace StarDust.Currency.Interfaces
 
         public bool Charge(UUID fromID, int amount, string text)
         {
-            return UserCurrencyTransfer(UUID.Zero, fromID, UUID.Zero, UUID.Zero, (uint)amount, "", (TransactionType)0);
+            return UserCurrencyTransfer(UUID.Zero, fromID, UUID.Zero, UUID.Zero, (uint)amount, "", (TransactionType)0, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, int amount, string description)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)0);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)0, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, int amount, string description, TransactionType type)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, int amount, string description, TransactionType type)
         {
-            return UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type);
+            return UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type, UUID.Random());
         }
 
         /// <summary>
@@ -74,8 +74,9 @@ namespace StarDust.Currency.Interfaces
         /// <param name="amount"></param>
         /// <param name="description"></param>
         /// <param name="type"></param>
+        /// <param name="transactionID"></param>
         /// <returns></returns>
-        public virtual bool UserCurrencyTransfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, uint amount, string description, TransactionType type)
+        public virtual bool UserCurrencyTransfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, uint amount, string description, TransactionType type, UUID transactionID)
         {
             bool isgridServer = false;
 
@@ -254,6 +255,7 @@ namespace StarDust.Currency.Interfaces
             Transaction transaction = m_connector.
                 UserCurrencyTransfer(new Transaction
                 {
+                    TransactionID = transactionID,
                     Amount = amount,
                     Description = description,
                     FromID = fromID,
