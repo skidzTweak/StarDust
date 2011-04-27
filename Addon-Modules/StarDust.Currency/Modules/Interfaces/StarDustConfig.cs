@@ -31,7 +31,6 @@ namespace StarDust.Currency.Interfaces
         private string m_upgradeMembershipUri = "";
         private int m_objectCapacity = 0;
 
-        private uint m_currencyInHandlerPort = 8007;
         private string m_currencyModule = "Dust";
         private string m_currencyConnector = "Local";
         private string m_afterCurrencyPurchaseMessage = "";
@@ -123,12 +122,6 @@ namespace StarDust.Currency.Interfaces
         {
             get { return m_currencyConnector; }
             set { m_currencyConnector = value; }
-        }
-
-        public uint CurrencyInHandlerPort
-        {
-            get { return m_currencyInHandlerPort; }
-            set { m_currencyInHandlerPort = value; }
         }
 
         public string CurrencyModule

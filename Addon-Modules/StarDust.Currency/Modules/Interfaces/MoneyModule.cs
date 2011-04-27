@@ -270,9 +270,10 @@ namespace StarDust.Currency.Interfaces
         #endregion
 
         #region event
+#pragma warning disable 67
         public event ObjectPaid OnObjectPaid;
         public event PostObjectPaid OnPostObjectPaid;
-
+#pragma warning restore
 
         public void FireObjectPaid(UUID uuid1, UUID uuid2, int p)
         {
