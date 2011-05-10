@@ -235,7 +235,13 @@ namespace StarDust.Currency.Grid
             string raw;
             OSDMap resp;
             if ((GetPayPalData(tx, out raw, out resp)) && (m_starDustCurrencyService.FinishPurchase(resp, raw)))
-                resp["Verified"] = OSD.FromBoolean(true);
+            {
+                if (resp.ContainsKey("Verified"))
+                    resp["Verified"] = OSD.FromBoolean(true);
+                else
+                    resp.Add("Verified", OSD.FromBoolean(true));
+                resp.Add("STARDUSTCOMPLETE", true);
+            }
             else
                 resp["Verified"] = OSD.FromBoolean(false);
 

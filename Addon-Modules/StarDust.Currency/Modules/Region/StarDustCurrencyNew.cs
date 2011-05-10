@@ -33,7 +33,7 @@ namespace StarDust.Currency.Region
                 KeyContainerName = "StarDustContainer",
                 Flags = CspProviderFlags.UseMachineKeyStore,
                 ProviderName = "Microsoft Strong Cryptographic Provider"
-            }); 
+            });
         }
 
         public void AddRegion(Scene scene)
@@ -120,9 +120,9 @@ namespace StarDust.Currency.Region
         /// Update the currency for the given user (This does not update the user's balance!)
         /// </summary>
         /// <param name="agent"></param>
-// ReSharper disable UnusedMember.Local
+        // ReSharper disable UnusedMember.Local
         bool UserCurrencyUpdate(StarDustUserCurrency agent)
-// ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return m_connector.UserCurrencyUpdate(agent);
         }
@@ -194,7 +194,7 @@ namespace StarDust.Currency.Region
         {
             UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
         }
-        
+
         private bool ValidateLandBuy(EventManager.LandBuyArgs e)
         {
             return Transfer(e.parcelOwnerID, e.agentId, e.parcelPrice, "Land Purchase", TransactionType.Purchase);
@@ -250,17 +250,17 @@ namespace StarDust.Currency.Region
                             " Price:" +
                             landParcel.LandData.PassPrice);
                 bool giveResult = UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
-                                                       (uint) landParcel.LandData.PassPrice, "Parcel Pass",
+                                                       (uint)landParcel.LandData.PassPrice, "Parcel Pass",
                                                        TransactionType.Purchase, UUID.Random());
                 if (giveResult)
                 {
                     ParcelManager.ParcelAccessEntry entry
                         = new ParcelManager.ParcelAccessEntry
-                              {
-                                  AgentID = fromID,
-                                  Flags = AccessList.Access,
-                                  Time = DateTime.Now.AddHours(landParcel.LandData.PassHours)
-                              };
+                        {
+                            AgentID = fromID,
+                            Flags = AccessList.Access,
+                            Time = DateTime.Now.AddHours(landParcel.LandData.PassHours)
+                        };
                     landParcel.LandData.ParcelAccessList.Add(entry);
                     agentSp.ControllingClient.SendAgentAlertMessage("You have been added to the parcel access list.",
                                                                     false);
@@ -269,7 +269,7 @@ namespace StarDust.Currency.Region
             else
             {
                 m_log.ErrorFormat("[StarDustCurrency]: No parcel found for parcel id {0}", parcelLocalId);
-                agentSp.ControllingClient.SendAgentAlertMessage("Opps, the internet blew up! Unable to find parcel.",false);
+                agentSp.ControllingClient.SendAgentAlertMessage("Opps, the internet blew up! Unable to find parcel.", false);
             }
         }
 
@@ -335,7 +335,7 @@ namespace StarDust.Currency.Region
         //    writer.Write(publicPrivateKeyXML);
         //    writer.Close();
 
-            
+
         //    writer = new StreamWriter("StarDustPublicKey-" +  + ".xml");
         //    string publicOnlyKeyXML = rsa.ToXmlString(false);
         //    writer.Write(publicOnlyKeyXML);
@@ -345,5 +345,5 @@ namespace StarDust.Currency.Region
         #endregion
     }
 
-    
+
 }

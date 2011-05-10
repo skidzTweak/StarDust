@@ -133,7 +133,7 @@ namespace StarDust.Currency.Interfaces
             ICapsService capsService;
             IClientCapsService client;
             IRegionClientCapsService regionClient;
-
+            ulong regionHandel = 0;
             if (scene != null)
             {
                 r = new RegionTransactionDetails
@@ -154,6 +154,7 @@ namespace StarDust.Currency.Interfaces
                         regionClient = client.GetRootCapsService();
                         if (regionClient != null)
                         {
+                            regionHandel = regionClient.Region.RegionHandle;
                             r.RegionName = regionClient.Region.RegionName;
                             r.RegionPosition = "<128,128,128>";
                             r.RegionID = regionClient.Region.RegionID;
@@ -163,6 +164,8 @@ namespace StarDust.Currency.Interfaces
                 }
             }
             else return false;
+
+
 
             IClientAPI icapiFrom = null;
             string fromName = "";
@@ -202,6 +205,7 @@ namespace StarDust.Currency.Interfaces
                 return false;
             }
 
+            uint objectLocalId = 0;
             IClientAPI icapiTo = null;
             string toName = "";
             if (toID != UUID.Zero)
@@ -225,6 +229,7 @@ namespace StarDust.Currency.Interfaces
                                 toName = ua.Name;
                             }
                             toObjectName = ce.Name;
+                            objectLocalId = ce.LocalId;
                         }
                         else
                         {
@@ -247,6 +252,12 @@ namespace StarDust.Currency.Interfaces
                 description = Enum.GetName(typeof(TransactionType), type);
             if (description == "")
                 description = type.ToString();
+
+
+            if ((toObjectID != UUID.Zero) && (!isgridServer))
+            {
+                FireObjectPaid(toObjectID, fromID, int.Parse(amount.ToString()));
+            }
 
             #endregion
 
@@ -307,6 +318,11 @@ namespace StarDust.Currency.Interfaces
                 SendGridMessage(transaction.FromID, "Transaction Failed", !isgridServer, transaction.TransactionID);
             }
 
+            if ((toObjectID != UUID.Zero) && (!isgridServer))
+            {
+                FirePostObjectPaid(objectLocalId, regionHandel, fromID, int.Parse(amount.ToString()));
+            }
+
             #endregion
 
             return returnvalue;
@@ -336,6 +352,12 @@ namespace StarDust.Currency.Interfaces
         {
             if (OnObjectPaid != null)
                 OnObjectPaid(uuid1, uuid2, p);
+        }
+
+        public void FirePostObjectPaid(uint localID, ulong regionHandle, UUID agentID, int amount)
+        {
+            if (OnPostObjectPaid != null)
+                OnPostObjectPaid(localID, regionHandle, agentID, amount);
         }
 
         #endregion

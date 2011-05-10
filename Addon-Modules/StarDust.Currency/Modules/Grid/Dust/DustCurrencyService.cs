@@ -55,9 +55,11 @@ namespace StarDust.Currency.Grid.Dust
                 server.AddStreamHandler(new StarDustCurrencyPostHandler("/StarDust", this, 0, m_registry));
                 m_log.DebugFormat("[DustCurrencyService] Initialize UNSECURE!!! {0}{1} ", server.HostName, server.Port);
             }
-            m_registry.RequestModuleInterface<IGridRegistrationService>().RegisterModule(this);
+            
 
             server = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer((uint)source.Configs["Handlers"].GetInt("LLLoginHandlerPort"));
+            m_registry.RequestModuleInterface<IGridRegistrationService>().RegisterModule(this);
+
             server.AddXmlRPCHandler("getCurrencyQuote", QuoteFunc);
             server.AddXmlRPCHandler("buyCurrency", BuyFunc);
             server.AddXmlRPCHandler("preflightBuyLandPrep", PreflightBuyLandPrepFunc);
@@ -77,7 +79,7 @@ namespace StarDust.Currency.Grid.Dust
 
         public void FinishedStartup()
         {
-            
+
         }
         #endregion
 
@@ -125,10 +127,10 @@ namespace StarDust.Currency.Grid.Dust
 
             if (requestData.ContainsKey("agentId") && requestData.ContainsKey("currencyBuy"))
             {
-                
 
-                    uint amount = uint.Parse(requestData["currencyBuy"].ToString());
-                    returnval.Value = new Hashtable
+
+                uint amount = uint.Parse(requestData["currencyBuy"].ToString());
+                returnval.Value = new Hashtable
                                           {
                                               {"success", true},
                                               {
@@ -143,8 +145,8 @@ namespace StarDust.Currency.Grid.Dust
                                                   },
                                               {"confirm", "asdfad9fj39ma9fj"}
                                           };
-                    return returnval;
-                
+                return returnval;
+
             }
             returnval.Value = new Hashtable
             {
@@ -183,7 +185,7 @@ namespace StarDust.Currency.Grid.Dust
                         Transaction transaction;
                         if (m_options.AutoApplyCurrency && success)
                             m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete", m_options.AutoApplyCurrency.ToString(), "Auto Complete", out transaction);
-                        
+
 
                         if (success && m_options.AfterCurrencyPurchaseMessage != string.Empty)
                             SendGridMessage(agentId, String.Format(m_options.AfterCurrencyPurchaseMessage, purchaseID.ToString()), false, UUID.Zero);
@@ -255,7 +257,7 @@ namespace StarDust.Currency.Grid.Dust
                 }
                 else
                 {
-                    
+
                 }
             }
 
@@ -291,7 +293,7 @@ namespace StarDust.Currency.Grid.Dust
                             }
                             else
                             {
-                                OSDMap innerReply = (OSDMap) replyData["_Result"];
+                                OSDMap innerReply = (OSDMap)replyData["_Result"];
                                 if (innerReply["Result"].AsString() == "Successful")
                                     return innerReply;
                                 m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI + ", " +
@@ -337,7 +339,7 @@ namespace StarDust.Currency.Grid.Dust
                             }
                             else
                             {
-                                OSDMap innerReply = (OSDMap) replyData["_Result"];
+                                OSDMap innerReply = (OSDMap)replyData["_Result"];
                                 if (innerReply["Result"].AsString() == "Successful")
                                     return true;
                                 m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI + ", " +
@@ -361,7 +363,7 @@ namespace StarDust.Currency.Grid.Dust
         protected override UserAccount GetUserAccount(UUID agentId)
         {
             IUserAccountService userService = m_registry.RequestModuleInterface<IUserAccountService>();
-            UserAccount user = userService.GetUserAccount(new UUID(),  agentId);
+            UserAccount user = userService.GetUserAccount(new UUID(), agentId);
             if (user == null)
             {
                 m_log.Info("[DustCurrencyService] Unable to find agent.");
@@ -384,7 +386,7 @@ namespace StarDust.Currency.Grid.Dust
             get { return m_options.CurrencyInHandlerPort; }
         }
 
-        public string GetUrlForRegisteringClient(string sessionID, ulong regionHandle)
+        public string GetUrlForRegisteringClient(string sessionID, ulong regionHandle, uint port)
         {
             string url = "/StarDust" + UUID.Random();
             IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
@@ -394,7 +396,7 @@ namespace StarDust.Currency.Grid.Dust
             return url;
         }
 
-        public void AddExistingUrlForClient(string sessionID, ulong regionHandle, string url)
+        public void AddExistingUrlForClient(string sessionID, ulong regionHandle, string url, uint port)
         {
             if (!m_enabled)
                 return;
@@ -404,7 +406,7 @@ namespace StarDust.Currency.Grid.Dust
             m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}{1} ", server.HostName, server.Port);
         }
 
-        public void RemoveUrlForClient(ulong regionHandle, string sessionID, string url)
+        public void RemoveUrlForClient(ulong regionHandle, string sessionID, string url, uint port)
         {
             IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
             server.RemoveHTTPHandler("POST", url);
@@ -449,5 +451,5 @@ namespace StarDust.Currency.Grid.Dust
         #endregion
     }
 
-    
+
 }

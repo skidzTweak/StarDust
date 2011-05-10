@@ -45,7 +45,7 @@ namespace StarDust.Currency.Interfaces
 
         #endregion
         #region functions
-        public StarDustConfig(){}
+        public StarDustConfig() { }
         public StarDustConfig(IConfig economyConfig)
         {
             foreach (PropertyInfo propertyInfo in GetType().GetProperties())
@@ -83,7 +83,7 @@ namespace StarDust.Currency.Interfaces
                     returnvalue.Add(propertyInfo.Name, (string)propertyInfo.GetValue(this, new object[0]));
                 else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
                     returnvalue.Add(propertyInfo.Name, (UUID)propertyInfo.GetValue(this, new object[0]));
-                
+
             }
             return returnvalue;
         }

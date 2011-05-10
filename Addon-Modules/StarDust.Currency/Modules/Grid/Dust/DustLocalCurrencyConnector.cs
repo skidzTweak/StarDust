@@ -82,11 +82,11 @@ namespace StarDust.Currency.Grid.Dust
 
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
-            m_gd.Update("stardust_currency", 
-                        new object[] {agent.LandInUse, agent.Tier}, 
-                        new[] {"LandInUse", "Tier"},
-                        new[] {"PrincipalID"}, 
-                        new object[] {agent.PrincipalID});
+            m_gd.Update("stardust_currency",
+                        new object[] { agent.LandInUse, agent.Tier },
+                        new[] { "LandInUse", "Tier" },
+                        new[] { "PrincipalID" },
+                        new object[] { agent.PrincipalID });
             return true;
         }
 
@@ -149,8 +149,8 @@ namespace StarDust.Currency.Grid.Dust
                 m_gd.Update("stardust_purchased",
                             new object[] { trans.TransactionID, isComplete, completeMethod, completeReference, Utils.GetUnixTime(), rawdata },
                             new[] { "TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated", "RawPayPalTransactionData" },
-                            new[] {"PurchaseID"},
-                            new object[] {purchaseID.ToString()});
+                            new[] { "PurchaseID" },
+                            new object[] { purchaseID.ToString() });
                 transaction = trans;
                 return true;
             }
@@ -174,23 +174,23 @@ namespace StarDust.Currency.Grid.Dust
                 return new Transaction();
             }
             return new Transaction
-                       {
-                           Amount = uint.Parse(query[0]),
-                           Updated = Utils.GetUnixTime(),
-                           Complete = int.Parse(query[1]),
-                           Created = Utils.GetUnixTime(),
-                           FromID = m_options.BankerPrincipalID,
-                           FromName = "Banker",
-                           Region = new RegionTransactionDetails
-                                        {
-                                            RegionID = UUID.Parse(query[5]),
-                                            RegionName = query[4],
-                                            RegionPosition = query[6]
-                                        },
-                           ToID = UUID.Parse(query[3]),
-                           ToName = query[7],
-                           Description = (query[6] == "1") ? "Purchase Currency" : "Purchase Region",
-                           TransactionID = ((query[9] == "") || ((query[9] == UUID.Zero.ToString()))) ? UUID.Random() : UUID.Parse(query[9])
+            {
+                Amount = uint.Parse(query[0]),
+                Updated = Utils.GetUnixTime(),
+                Complete = int.Parse(query[1]),
+                Created = Utils.GetUnixTime(),
+                FromID = m_options.BankerPrincipalID,
+                FromName = "Banker",
+                Region = new RegionTransactionDetails
+                {
+                    RegionID = UUID.Parse(query[5]),
+                    RegionName = query[4],
+                    RegionPosition = query[6]
+                },
+                ToID = UUID.Parse(query[3]),
+                ToName = query[7],
+                Description = (query[6] == "1") ? "Purchase Currency" : "Purchase Region",
+                TransactionID = ((query[9] == "") || ((query[9] == UUID.Zero.ToString()))) ? UUID.Random() : UUID.Parse(query[9])
             };
         }
 
@@ -376,7 +376,7 @@ namespace StarDust.Currency.Grid.Dust
                 return false;
             }
 
-            
+
             if (transaction.TransactionID != UUID.Zero)
             {
                 List<string> query = m_gd.Query("TransactionID", transaction.TransactionID, "stardust_currency_history",
@@ -389,9 +389,9 @@ namespace StarDust.Currency.Grid.Dust
                                         transaction.Complete, transaction.CompleteReason, Utils.GetUnixTime(),
                                         transaction.ToBalance, transaction.FromBalance
                                     },
-                                new[] {"Complete", "CompleteReason", "Updated", "ToBalance", "FromBalance"},
-                                new[] {"TransactionID"},
-                                new object[] {transaction.TransactionID});
+                                new[] { "Complete", "CompleteReason", "Updated", "ToBalance", "FromBalance" },
+                                new[] { "TransactionID" },
+                                new object[] { transaction.TransactionID });
                     trans = transaction;
                     return true;
                 }
@@ -433,6 +433,6 @@ namespace StarDust.Currency.Grid.Dust
         }
         #endregion
 
-        
+
     }
 }
