@@ -408,7 +408,7 @@ namespace StarDust.Currency.Grid.Dust
                 {
                     if (UserCurrencyTransfer(transaction.ToID, m_options.BankerPrincipalID, UUID.Zero, UUID.Zero,
                                                  transaction.Amount, "Currency Purchase",
-                                                 TransactionType.SystemGenerated))
+                                                 TransactionType.SystemGenerated, transaction.TransactionID))
                     {
                         return true;
                     }

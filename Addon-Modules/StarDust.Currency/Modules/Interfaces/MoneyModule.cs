@@ -27,7 +27,7 @@ namespace StarDust.Currency.Interfaces
 
         public bool ObjectGiveMoney(UUID fromObjectID, UUID fromID, UUID toID, int amount)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay, UUID.Random());
         }
 
         public virtual int Balance(IClientAPI client)
@@ -46,22 +46,22 @@ namespace StarDust.Currency.Interfaces
 
         public bool Charge(UUID fromID, int amount, string text)
         {
-            return UserCurrencyTransfer(UUID.Zero, fromID, UUID.Zero, UUID.Zero, (uint)amount, "", (TransactionType)0);
+            return UserCurrencyTransfer(UUID.Zero, fromID, UUID.Zero, UUID.Zero, (uint)amount, "", (TransactionType)0, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, int amount, string description)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)0);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)0, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, int amount, string description, TransactionType type)
         {
-            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type);
+            return UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
         }
 
         public bool Transfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, int amount, string description, TransactionType type)
         {
-            return UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type);
+            return UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type, UUID.Random());
         }
 
         /// <summary>
@@ -74,34 +74,14 @@ namespace StarDust.Currency.Interfaces
         /// <param name="amount"></param>
         /// <param name="description"></param>
         /// <param name="type"></param>
+        /// <param name="transactionID"></param>
         /// <returns></returns>
-        public virtual bool UserCurrencyTransfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, uint amount, string description, TransactionType type)
+        public virtual bool UserCurrencyTransfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, uint amount, string description, TransactionType type, UUID transactionID)
         {
             bool isgridServer = false;
 
             #region Build the transaction
-            IClientAPI icapiFrom = GetUserClient(fromID);
-            string fromName = (icapiFrom != null) ? icapiFrom.Name : GetUserAccount(fromID).Name;
 
-            IClientAPI icapiTo = null;
-            string toName = "";
-            if (toID != UUID.Zero)
-            {
-                icapiTo = GetUserClient(toID);
-                UserAccount ua = GetUserAccount(toID);
-                if (ua != null)
-                {
-                    toName = (icapiTo != null) ? icapiTo.Name : ua.Name;
-                }
-                else
-                {
-                    // this ensure it has a record to store money
-                    // Money to groups now has to be distrubted by hand
-                    UserCurrencyInfo(toID);
-                    toName = "Group";
-                }
-            }
-            else toID = m_options.BankerPrincipalID;
 
 
             string transactionPosition = "";
@@ -157,11 +137,11 @@ namespace StarDust.Currency.Interfaces
             if (scene != null)
             {
                 r = new RegionTransactionDetails
-                        {
-                            RegionID = scene.RegionInfo.RegionID,
-                            RegionName = scene.RegionInfo.RegionName,
-                            RegionPosition = transactionPosition
-                        };
+                {
+                    RegionID = scene.RegionInfo.RegionID,
+                    RegionName = scene.RegionInfo.RegionName,
+                    RegionPosition = transactionPosition
+                };
             }
             else if (m_registry != null)
             {
@@ -184,6 +164,83 @@ namespace StarDust.Currency.Interfaces
             }
             else return false;
 
+            IClientAPI icapiFrom = null;
+            string fromName = "";
+            if (fromID != UUID.Zero)
+            {
+                icapiFrom = GetUserClient(fromID);
+                UserAccount ua = GetUserAccount(fromID);
+                if (ua != null)
+                    fromName = (icapiFrom != null) ? icapiFrom.Name : ua.Name;
+                else
+                {
+                    if (!isgridServer)
+                    {
+                        ISceneChildEntity ce = FindObject(fromID, out scene);
+                        if (ce != null)
+                        {
+                            fromObjectID = fromID;
+                            fromID = ce.OwnerID;
+                            ua = GetUserAccount(fromID);
+
+                            if (ua != null) fromName = ua.Name;
+                            else fromID = UUID.Zero;
+
+                            fromObjectName = ce.Name;
+                        }
+                        else
+                            fromID = UUID.Zero;
+                    }
+                    else
+                        fromID = UUID.Zero;
+                }
+            }
+
+            if (fromID == UUID.Zero)
+            {
+                m_log.Debug("[StarDust MoneyModule.cs] Could not find who the money was coming from.");
+                return false;
+            }
+
+            IClientAPI icapiTo = null;
+            string toName = "";
+            if (toID != UUID.Zero)
+            {
+                icapiTo = GetUserClient(toID);
+                UserAccount ua = GetUserAccount(toID);
+                if (ua != null)
+                    toName = (icapiTo != null) ? icapiTo.Name : ua.Name;
+                else
+                {
+                    if (!isgridServer)
+                    {
+                        ISceneChildEntity ce = FindObject(toID, out scene);
+                        if (ce != null)
+                        {
+                            toObjectID = toID;
+                            toID = ce.OwnerID;
+                            ua = GetUserAccount(toID);
+                            if (ua != null)
+                            {
+                                toName = ua.Name;
+                            }
+                            toObjectName = ce.Name;
+                        }
+                        else
+                        {
+                            toName = "Group";
+                        }
+                    }
+                    else
+                    {
+                        toName = "Group";
+                    }
+                }
+            }
+            else toID = m_options.BankerPrincipalID;
+            //this ensure no matter what theres a place for the money to go
+            UserCurrencyInfo(toID);
+
             if ((description == "") && ((int)type == 5001) && (fromObjectID == UUID.Zero) && (toObjectID == UUID.Zero))
                 description = "Gift";
             if (description == "")
@@ -198,6 +255,7 @@ namespace StarDust.Currency.Interfaces
             Transaction transaction = m_connector.
                 UserCurrencyTransfer(new Transaction
                 {
+                    TransactionID = transactionID,
                     Amount = amount,
                     Description = description,
                     FromID = fromID,
@@ -295,16 +353,32 @@ namespace StarDust.Currency.Interfaces
             m_log.Warn("[StarDustStartup]: Version: " + version + "\n");
         }
 
-        protected bool CheckEnabled(string isGridServer, IConfigSource source)
+        protected bool CheckEnabled(string localOrRemote, IConfigSource source)
         {
             // check to see if it should be enabled and then load the config
             if (source == null) throw new ArgumentNullException("source");
             IConfig economyConfig = source.Configs["StarDustCurrency"];
             m_enabled = (economyConfig != null)
-                            ? (economyConfig.GetString("CurrencyConnector", "Remote") == isGridServer)
-                            : "Remote" == isGridServer;
+                            ? (economyConfig.GetString("CurrencyConnector", "Remote") == localOrRemote)
+                            : "Remote" == localOrRemote;
             m_enabled = (m_enabled &&
                 (source.Configs["Handlers"].GetString("CurrencyHandler", "") == "StarDust"));
+            if (!m_enabled)
+            {
+                m_log.Info("Stardust is not loading.");
+                m_log.Info("CurrencyHandler = " + source.Configs["Handlers"].GetString("CurrencyHandler", "") + " " + ((source.Configs["Handlers"].GetString("CurrencyHandler", "") != "StarDust") ? "Bad" : "Good"));
+                if ("Remote" != localOrRemote)
+                {
+                    m_log.Info("economyConfig = " + (economyConfig == null) + " " +
+                               ((economyConfig == null) ? "Bad" : "Good"));
+                    if (economyConfig == null) return m_enabled;
+                    m_log.Info("CurrencyConnector = " + economyConfig.GetString("CurrencyConnector", "Remote") + " " +
+                               ((economyConfig.GetString("CurrencyConnector", "Remote") != localOrRemote)
+                                    ? "Bad"
+                                    : "Good"));
+                }
+                m_log.Info("End StarDust Info");
+            }
             return m_enabled;
         }
 

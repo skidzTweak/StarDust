@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using Aurora.Simulation.Base;
 using log4net;
 using Nini.Config;
@@ -14,6 +16,7 @@ namespace StarDust.Currency.Region
 {
     public class StarDustCurrencyConnector : IStarDustCurrencyService, IService
     {
+        public static RSACryptoServiceProvider rsa;
         private static readonly ILog m_log =
                 LogManager.GetLogger(
                 MethodBase.GetCurrentMethod().DeclaringType);
@@ -39,6 +42,13 @@ namespace StarDust.Currency.Region
             if (!m_enabled) return;
             m_registry = registry;
             m_registry.RegisterModuleInterface<IStarDustCurrencyService>(this);
+
+            rsa = new RSACryptoServiceProvider(new CspParameters(1)
+                                          {
+                                              KeyContainerName = "StarDustContainer",
+                                              Flags = CspProviderFlags.UseMachineKeyStore,
+                                              ProviderName = "Microsoft Strong Cryptographic Provider"
+                                          }); 
         }
 
         public void Start(IConfigSource config, IRegistryCore registry)
@@ -187,6 +197,27 @@ namespace StarDust.Currency.Region
             }
             return null;
         }
+
+        #endregion
+
+        #region Encryption
+
+        //private OSDMap Encrypt(OSDMap theMap)
+        //{
+        //    OSDMap result = new OSDMap();
+
+        //    StreamReader reader = new StreamReader(@"C:\Inetpub\wwwroot\dotnetspiderencryption\publickey.xml");
+        //    string publicOnlyKeyXML = reader.ReadToEnd();
+        //    rsa.FromXmlString(publicOnlyKeyXML);
+        //    reader.Close();
+
+        //    //read plaintext, encrypt it to ciphertext
+
+        //    byte[] plainbytes = System.Text.Encoding.UTF8.GetBytes(data2Encrypt);
+        //    byte[] cipherbytes = rsa.Encrypt(plainbytes, false);
+        //    return Convert.ToBase64String(cipherbytes);
+        //    return theMap;
+        //}
 
         #endregion
 

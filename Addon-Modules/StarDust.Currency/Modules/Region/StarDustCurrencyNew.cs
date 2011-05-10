@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
@@ -14,7 +16,7 @@ namespace StarDust.Currency.Region
 {
     public class StarDustCurrencyNew : MoneyModule, ISharedRegionModule
     {
-
+        public static RSACryptoServiceProvider rsa;
         private readonly List<Scene> m_scenes = new List<Scene>();
         private int m_objectCapacity;
 
@@ -24,6 +26,14 @@ namespace StarDust.Currency.Region
             if (!CheckEnabled("Remote", source))
                 return;
             DisplayLogo();
+            //MainConsole.Instance.Commands.AddCommand("StarDust Generate Keys", "Generates the security keys for coms",
+            //                                         "Generates the security keys for coms", GenerateKeys);
+            rsa = new RSACryptoServiceProvider(new CspParameters(1)
+            {
+                KeyContainerName = "StarDustContainer",
+                Flags = CspProviderFlags.UseMachineKeyStore,
+                ProviderName = "Microsoft Strong Cryptographic Provider"
+            }); 
         }
 
         public void AddRegion(Scene scene)
@@ -49,8 +59,6 @@ namespace StarDust.Currency.Region
             scene.EventManager.OnNewClient += OnNewClient;
             scene.EventManager.OnClosingClient += OnClosingClient;
             scene.EventManager.OnValidateBuyLand += ValidateLandBuy;
-
-            
 
             m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0}{1} ", server.HostName, server.Port);
         }
@@ -184,7 +192,7 @@ namespace StarDust.Currency.Region
 
         private void ProcessMoneyTransferRequest2(UUID fromID, UUID toID, int amount, int type, string description)
         {
-            UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type);
+            UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
         }
         
         private bool ValidateLandBuy(EventManager.LandBuyArgs e)
@@ -243,7 +251,7 @@ namespace StarDust.Currency.Region
                             landParcel.LandData.PassPrice);
                 bool giveResult = UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
                                                        (uint) landParcel.LandData.PassPrice, "Parcel Pass",
-                                                       TransactionType.Purchase);
+                                                       TransactionType.Purchase, UUID.Random());
                 if (giveResult)
                 {
                     ParcelManager.ParcelAccessEntry entry
@@ -315,6 +323,24 @@ namespace StarDust.Currency.Region
                     return (goDeep) ? m_connector.SendGridMessage(toId, message, false, transactionId) : false;
             }
         }
+
+        #endregion
+
+        #region console commands
+
+        //private void GenerateKeys(string module, string[] cmd)
+        //{
+        //    StreamWriter writer = new StreamWriter("StarDustPrivateKey.xml");
+        //    string publicPrivateKeyXML = rsa.ToXmlString(true);
+        //    writer.Write(publicPrivateKeyXML);
+        //    writer.Close();
+
+            
+        //    writer = new StreamWriter("StarDustPublicKey-" +  + ".xml");
+        //    string publicOnlyKeyXML = rsa.ToXmlString(false);
+        //    writer.Write(publicOnlyKeyXML);
+        //    writer.Close();
+        //}
 
         #endregion
     }
