@@ -1,3 +1,6 @@
+<script language="javascript" type="text/javascript">
+	addEvent(window, "load", function() { document.getElementById("login_input").focus(); } );
+</script>
 <div id="content">
     <div id="ContentHeaderLeft"><h5><?= SYSNAME ?></h5></div>
     <div id="ContentHeaderCenter"></div>
@@ -22,7 +25,7 @@
                 </tr>
                 <tr>
                     <td class="even"><span id="password_label"><? echo $webui_password ?>*</span></td>
-                    <td class="even"><div class="roundedinput"><input require="true" label="password_label" id="login_input" type="password" name="logpassword" /></div></td>
+                    <td class="even"><div class="roundedinput"><input require="true" label="password_label" id="login_input2" type="password" name="logpassword" /></div></td>
                 </tr>
                 <tr>
                     <td class="odd"><a href="index.php?page=forgotpass"><? echo $webui_forgot_password ?></a></td>                
