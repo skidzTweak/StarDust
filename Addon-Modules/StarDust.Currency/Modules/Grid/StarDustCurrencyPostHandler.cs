@@ -21,15 +21,15 @@ namespace StarDust.Currency.Grid
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly IStarDustCurrencyService m_starDustCurrencyService;
-        private readonly ulong m_regionHandle;
         private readonly IRegistryCore m_registry;
+        private readonly string m_sessionID;
 
-        public StarDustCurrencyPostHandler(string url, IStarDustCurrencyService service, ulong regionHandle, IRegistryCore registry) :
+        public StarDustCurrencyPostHandler(string url, IStarDustCurrencyService service, IRegistryCore registry, string sessionID) :
                 base("POST", url)
         {
             m_starDustCurrencyService = service;
-            m_regionHandle = regionHandle;
             m_registry = registry;
+            m_sessionID = sessionID ;
         }
 
         #region BaseStreamHandler
@@ -50,7 +50,7 @@ namespace StarDust.Currency.Grid
                 IGridRegistrationService urlModule =
                             m_registry.RequestModuleInterface<IGridRegistrationService>();
                 if ((map == null) || (!map.ContainsKey("Method")) ||
-                    ((urlModule != null) && (!urlModule.CheckThreatLevel("", m_regionHandle, map["Method"].AsString(), ThreatLevel.High)))) 
+                    ((urlModule != null) && (!urlModule.CheckThreatLevel(m_sessionID, map["Method"].AsString(), ThreatLevel.High)))) 
                     return FailureResult();
                 
                 switch (map["Method"].AsString())

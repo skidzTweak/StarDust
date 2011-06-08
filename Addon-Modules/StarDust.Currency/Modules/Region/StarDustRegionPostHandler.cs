@@ -16,7 +16,6 @@ namespace StarDust.Currency.Region
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly StarDustCurrencyNew m_currenyService;
-        public StarDustConfig Options;
 
         public StarDustRegionPostHandler(string url, StarDustCurrencyNew service, ulong regionHandle, IRegistryCore registry) :
             base("POST", url)
