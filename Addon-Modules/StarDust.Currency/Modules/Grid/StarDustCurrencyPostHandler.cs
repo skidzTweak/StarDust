@@ -25,11 +25,11 @@ namespace StarDust.Currency.Grid
         private readonly string m_sessionID;
 
         public StarDustCurrencyPostHandler(string url, IStarDustCurrencyService service, IRegistryCore registry, string sessionID) :
-                base("POST", url)
+            base("POST", url)
         {
             m_starDustCurrencyService = service;
             m_registry = registry;
-            m_sessionID = sessionID ;
+            m_sessionID = sessionID;
         }
 
         #region BaseStreamHandler
@@ -37,6 +37,7 @@ namespace StarDust.Currency.Grid
         public override byte[] Handle(string path, Stream requestData,
                 OSHttpRequest httpRequest, OSHttpResponse httpResponse)
         {
+
             StreamReader sr = new StreamReader(requestData);
             string body = sr.ReadToEnd();
             sr.Close();
@@ -50,9 +51,12 @@ namespace StarDust.Currency.Grid
                 IGridRegistrationService urlModule =
                             m_registry.RequestModuleInterface<IGridRegistrationService>();
                 if ((map == null) || (!map.ContainsKey("Method")) ||
-                    ((urlModule != null) && (!urlModule.CheckThreatLevel(m_sessionID, map["Method"].AsString(), ThreatLevel.High)))) 
+                    ((urlModule != null) && (!urlModule.CheckThreatLevel(m_sessionID, map["Method"].AsString(), ThreatLevel.High))))
+                {
+                    m_log.Error("[StarDustCurrencyPostHandler] Failed CheckThreatLevel for " + ((!map.ContainsKey("Method")) ? "NO METHED SENT" : map["Method"].AsString()));
                     return FailureResult();
-                
+                }
+
                 switch (map["Method"].AsString())
                 {
                     case "stardust_currencyinfo":
@@ -88,6 +92,7 @@ namespace StarDust.Currency.Grid
 
         private byte[] GetConfig(OSDMap map)
         {
+            m_log.Info("[StarDustCurrencyPostHandler] Sending config");
             OSDMap map2 = m_starDustCurrencyService.GetConfig().ToOSD();
             map2.Add("Result", "Successful");
             return Return(map2);
@@ -180,6 +185,7 @@ namespace StarDust.Currency.Grid
         public override byte[] Handle(string path, Stream requestData,
                 OSHttpRequest httpRequest, OSHttpResponse httpResponse)
         {
+
             StreamReader sr = new StreamReader(requestData);
             string body = sr.ReadToEnd();
             sr.Close();
@@ -188,7 +194,7 @@ namespace StarDust.Currency.Grid
             //m_log.DebugFormat("[XXX]: query String: {0}", body);
             try
             {
-                OSDMap map = (OSDMap) OSDParser.DeserializeJson(body);
+                OSDMap map = (OSDMap)OSDParser.DeserializeJson(body);
                 //Make sure that the person who is calling can access the web service
                 if (VerifyPassword(map))
                 {
@@ -210,7 +216,7 @@ namespace StarDust.Currency.Grid
             catch (Exception)
             {
             }
-            OSDMap resp = new OSDMap {{"response", OSD.FromString("Failed")}};
+            OSDMap resp = new OSDMap { { "response", OSD.FromString("Failed") } };
             string xmlString = OSDParser.SerializeJsonString(resp);
             UTF8Encoding encoding = new UTF8Encoding();
             return encoding.GetBytes(xmlString);
@@ -269,7 +275,7 @@ namespace StarDust.Currency.Grid
             }
             else
                 resp["Verified"] = OSD.FromBoolean(true);
-            
+
             string xmlString = OSDParser.SerializeJsonString(resp);
             UTF8Encoding encoding = new UTF8Encoding();
             return encoding.GetBytes(xmlString);
@@ -282,9 +288,9 @@ namespace StarDust.Currency.Grid
             string notes = map["notes"].AsString();
             string subscription_id = map["subscription_id"].AsString();
             OSDMap response = m_starDustCurrencyService.OrderSubscription(toId, regionName, notes, subscription_id);
-            
+
             response.Add("Verified", OSD.FromBoolean(response.ContainsKey("purchaseID")));
-            
+
             string xmlString = OSDParser.SerializeJsonString(response);
             UTF8Encoding encoding = new UTF8Encoding();
             return encoding.GetBytes(xmlString);
@@ -298,7 +304,7 @@ namespace StarDust.Currency.Grid
         private bool GetPayPalData(string tx, out string raw, out OSDMap results)
         {
             string paypalURL = "https://" + m_options.PayPalURL + "/cgi-bin/webscr";
-            HttpWebRequest req = (HttpWebRequest) WebRequest.Create(paypalURL);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(paypalURL);
 
             req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded";
@@ -317,9 +323,9 @@ namespace StarDust.Currency.Grid
             string strResponse = "";
             try
             {
-// ReSharper disable AssignNullToNotNullAttribute
+                // ReSharper disable AssignNullToNotNullAttribute
                 streamIn = new StreamReader(req.GetResponse().GetResponseStream());
-// ReSharper restore AssignNullToNotNullAttribute
+                // ReSharper restore AssignNullToNotNullAttribute
                 strResponse = streamIn.ReadToEnd();
             }
             catch (Exception e)

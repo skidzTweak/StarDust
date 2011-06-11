@@ -83,10 +83,22 @@ namespace StarDust.Currency.Region
 
         public StarDustConfig GetConfig()
         {
-            return new StarDustConfig(MakeCallOSDMAP(new OSDMap()
-                                      {
-                                          {"Method", "getconfig"}
-                                      }, "GetConfig"));
+            OSDMap tempmap = MakeCallOSDMAP(new OSDMap()
+                                                {
+                                                    {"Method", "getconfig"}
+                                                }, "GetConfig");
+            if (tempmap != null)
+                return new StarDustConfig(tempmap);
+            else
+            {
+                m_log.Error("No configuration was returned from the grid server.");
+                List<string> serverUrIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustCurrencyURI");
+                foreach (string serverUri in serverUrIs)
+                {
+                    m_log.Info("Stardust Currency Server is " + serverUri);
+                }
+                return null;
+            }
         }
 
         public bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
