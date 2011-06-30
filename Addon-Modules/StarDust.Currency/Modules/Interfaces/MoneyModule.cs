@@ -382,15 +382,12 @@ namespace StarDust.Currency.Interfaces
             m_enabled = (economyConfig != null)
                             ? (economyConfig.GetString("CurrencyConnector", "Remote") == localOrRemote)
                             : "Remote" == localOrRemote;
-            m_enabled = (m_enabled &&
-                (source.Configs["Handlers"].GetString("CurrencyHandler", "") == "StarDust"));
             if (!m_enabled)
             {
                 // check to ensure this is the right area that was trying to load before I spit out debug info for why it didn't load
                 if ((economyConfig != null) && (economyConfig.GetString("CurrencyConnector", "Remote") != localOrRemote)) return m_enabled;
                 else if ((economyConfig == null) && ("Remote" != localOrRemote)) return m_enabled;
                 m_log.Info("Stardust is not loading.");
-                m_log.Info("CurrencyHandler = " + source.Configs["Handlers"].GetString("CurrencyHandler", "") + " " + ((source.Configs["Handlers"].GetString("CurrencyHandler", "") != "StarDust") ? "Bad" : "Good"));
                 if ("Remote" != localOrRemote)
                 {
                     m_log.Info("economyConfig = " + (economyConfig == null) + " " +

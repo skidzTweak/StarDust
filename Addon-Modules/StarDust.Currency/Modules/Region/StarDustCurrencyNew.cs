@@ -313,7 +313,7 @@ namespace StarDust.Currency.Region
                         icapiTo.SendAlertMessage(message.Substring(message.IndexOf("http")));
                     }
                     else if (icapiTo != null)
-                        icapiTo.SendMoneyBalance(transactionId, true, Util.UTF8.GetBytes(message), Balance(icapiTo));
+                        icapiTo.SendMoneyBalance(transactionId, true, Utils.StringToBytes(message), Balance(icapiTo));
                     else
                         dialogModule.SendAlertToUser(toId, message);
 

@@ -44,20 +44,8 @@ namespace StarDust.Currency.Grid.Dust
             m_registry.RegisterModuleInterface<IMoneyModule>(this);
             m_options = new StarDustConfig(source.Configs["StarDustCurrency"]);
 
-            IHttpServer server;
             IConfig handlerConfig = source.Configs["Handlers"];
-            if (handlerConfig.GetBoolean("UnsecureUrls", false))
-            {
-                // have not tested any of this
-                server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
-                m_options.CurrencyInHandlerPort = server.Port;
-
-                server.AddStreamHandler(new StarDustCurrencyPostHandler("/StarDust", this, m_registry, "666"));
-                m_log.DebugFormat("[DustCurrencyService] Initialize UNSECURE!!! {0}{1} ", server.HostName, server.Port);
-            }
-            
-
-            server = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer((uint)source.Configs["Handlers"].GetInt("LLLoginHandlerPort"));
+            IHttpServer server = registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer ((uint)source.Configs["Handlers"].GetInt ("LLLoginHandlerPort"));
             m_registry.RequestModuleInterface<IGridRegistrationService>().RegisterModule(this);
 
             server.AddXmlRPCHandler("getCurrencyQuote", QuoteFunc);
@@ -378,18 +366,13 @@ namespace StarDust.Currency.Grid.Dust
 
         public string UrlName
         {
-            get { return "StarDustCurrencyURI"; }
-        }
-
-        public uint Port
-        {
-            get { return m_options.CurrencyInHandlerPort; }
+            get { return "StarDustURI"; }
         }
 
         public string GetUrlForRegisteringClient(string sessionID, uint port)
         {
             string url = "/StarDust" + UUID.Random();
-            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
+            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer (port);
             m_options.CurrencyInHandlerPort = server.Port;
             server.AddStreamHandler(new StarDustCurrencyPostHandler(url, this, m_registry, sessionID));
             m_log.DebugFormat("[DustCurrencyService] GetUrlForRegisteringClient {0}{1} ", server.HostName, server.Port);
@@ -398,9 +381,9 @@ namespace StarDust.Currency.Grid.Dust
 
         public void AddExistingUrlForClient(string sessionID, string url, uint port)
         {
-            if (!m_enabled)
+            if (url == "")
                 return;
-            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
+            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer (port);
             m_options.CurrencyInHandlerPort = server.Port;
             server.AddStreamHandler(new StarDustCurrencyPostHandler(url, this, m_registry, sessionID));
             m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}{1} ", server.HostName, server.Port);
@@ -408,7 +391,7 @@ namespace StarDust.Currency.Grid.Dust
 
         public void RemoveUrlForClient(string sessionID, string url, uint port)
         {
-            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(m_options.CurrencyInHandlerPort);
+            IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer (port);
             server.RemoveHTTPHandler("POST", url);
         }
 

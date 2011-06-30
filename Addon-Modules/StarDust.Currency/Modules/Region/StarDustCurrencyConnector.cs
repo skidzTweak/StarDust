@@ -34,8 +34,6 @@ namespace StarDust.Currency.Region
             m_enabled = (economyConfig != null)
                             ? (economyConfig.GetString("CurrencyConnector", "Remote") == "Remote")
                             : true;
-            m_enabled = (m_enabled &&
-                (source.Configs["Handlers"].GetString("CurrencyHandler", "") == "StarDust"));
             if (!m_enabled) return;
             m_registry = registry;
             m_registry.RegisterModuleInterface<IStarDustCurrencyService>(this);
@@ -92,7 +90,7 @@ namespace StarDust.Currency.Region
             else
             {
                 m_log.Error("No configuration was returned from the grid server.");
-                List<string> serverUrIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustCurrencyURI");
+                List<string> serverUrIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustURI");
                 foreach (string serverUri in serverUrIs)
                 {
                     m_log.Info("Stardust Currency Server is " + serverUri);
@@ -134,7 +132,7 @@ namespace StarDust.Currency.Region
 
         private bool MakeCall(OSDMap reqString, string function)
         {
-            List<string> serverURIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustCurrencyURI");
+            List<string> serverURIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustURI");
             foreach (string serverURI in serverURIs)
             {
                 try
@@ -168,7 +166,7 @@ namespace StarDust.Currency.Region
 
         private OSDMap MakeCallOSDMAP(OSDMap reqString, string function)
         {
-            List<string> serverURIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustCurrencyURI");
+            List<string> serverURIs = m_registry.RequestModuleInterface<IConfigurationService>().FindValueOf("StarDustURI");
             foreach (string serverURI in serverURIs)
             {
                 try

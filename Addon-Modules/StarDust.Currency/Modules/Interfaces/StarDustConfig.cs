@@ -4,11 +4,17 @@ using System.Reflection;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using log4net;
+using System.Reflection;
 
 namespace StarDust.Currency.Interfaces
 {
     public class StarDustConfig
     {
+        private static readonly ILog m_log =
+                LogManager.GetLogger (
+                MethodBase.GetCurrentMethod ().DeclaringType);
+
         #region declarations
         private int m_priceEnergyUnit = 100;
         private int m_priceObjectClaim = 10;
@@ -36,6 +42,7 @@ namespace StarDust.Currency.Interfaces
         private string m_currencyConnector = "Local";
         private string m_afterCurrencyPurchaseMessage = "";
         private bool m_autoApplyCurrency = false;
+        private bool m_allowBankerToHaveNoMoney = true;
         private string m_errorURI = "";
         private string m_messgeBeforeBuyLand = "";
         private int m_AdditionPercentage = 291;
@@ -50,16 +57,23 @@ namespace StarDust.Currency.Interfaces
         {
             foreach (PropertyInfo propertyInfo in GetType().GetProperties())
             {
-                if (propertyInfo.PropertyType.IsAssignableFrom(typeof(float)))
-                    propertyInfo.SetValue(this, economyConfig.GetFloat(propertyInfo.Name, float.Parse(propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(int)))
-                    propertyInfo.SetValue(this, economyConfig.GetInt(propertyInfo.Name, int.Parse(propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(bool)))
-                    propertyInfo.SetValue(this, economyConfig.GetBoolean(propertyInfo.Name, bool.Parse(propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
-                    propertyInfo.SetValue(this, economyConfig.GetString(propertyInfo.Name, propertyInfo.GetValue(this, new object[0]).ToString()), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
-                    propertyInfo.SetValue(this, new UUID(economyConfig.GetString(propertyInfo.Name, propertyInfo.GetValue(this, new object[0]).ToString())), new object[0]);
+                try
+                {
+                    if (propertyInfo.PropertyType.IsAssignableFrom (typeof (float)))
+                        propertyInfo.SetValue (this, economyConfig.GetFloat (propertyInfo.Name, float.Parse (propertyInfo.GetValue (this, new object[0]).ToString ())), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (int)))
+                        propertyInfo.SetValue (this, economyConfig.GetInt (propertyInfo.Name, int.Parse (propertyInfo.GetValue (this, new object[0]).ToString ())), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (bool)))
+                        propertyInfo.SetValue (this, economyConfig.GetBoolean (propertyInfo.Name, bool.Parse (propertyInfo.GetValue (this, new object[0]).ToString ())), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (string)))
+                        propertyInfo.SetValue (this, economyConfig.GetString (propertyInfo.Name, propertyInfo.GetValue (this, new object[0]).ToString ()), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (UUID)))
+                        propertyInfo.SetValue (this, new UUID (economyConfig.GetString (propertyInfo.Name, propertyInfo.GetValue (this, new object[0]).ToString ())), new object[0]);
+                }
+                catch(Exception ex)
+                {
+                    m_log.Warn ("[StarDust]: Exception reading economy config: " + ex.ToString ());
+                }
             }
         }
 
@@ -73,17 +87,23 @@ namespace StarDust.Currency.Interfaces
             OSDMap returnvalue = new OSDMap();
             foreach (PropertyInfo propertyInfo in GetType().GetProperties())
             {
-                if (propertyInfo.PropertyType.IsAssignableFrom(typeof(float)))
-                    returnvalue.Add(propertyInfo.Name, (float)propertyInfo.GetValue(this, new object[0]));
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(int)))
-                    returnvalue.Add(propertyInfo.Name, (int)propertyInfo.GetValue(this, new object[0]));
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(bool)))
-                    returnvalue.Add(propertyInfo.Name, (bool)propertyInfo.GetValue(this, new object[0]));
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
-                    returnvalue.Add(propertyInfo.Name, (string)propertyInfo.GetValue(this, new object[0]));
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
-                    returnvalue.Add(propertyInfo.Name, (UUID)propertyInfo.GetValue(this, new object[0]));
-
+                try
+                {
+                    if (propertyInfo.PropertyType.IsAssignableFrom (typeof (float)))
+                        returnvalue.Add (propertyInfo.Name, (float)propertyInfo.GetValue (this, new object[0]));
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (int)))
+                        returnvalue.Add (propertyInfo.Name, (int)propertyInfo.GetValue (this, new object[0]));
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (bool)))
+                        returnvalue.Add (propertyInfo.Name, (bool)propertyInfo.GetValue (this, new object[0]));
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (string)))
+                        returnvalue.Add (propertyInfo.Name, (string)propertyInfo.GetValue (this, new object[0]));
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (UUID)))
+                        returnvalue.Add (propertyInfo.Name, (UUID)propertyInfo.GetValue (this, new object[0]));
+                }
+                catch (Exception ex)
+                {
+                    m_log.Warn ("[StarDust]: Exception toOSD() config: " + ex.ToString ());
+                }
             }
             return returnvalue;
         }
@@ -93,16 +113,23 @@ namespace StarDust.Currency.Interfaces
             foreach (PropertyInfo propertyInfo in
                 GetType().GetProperties().Where(propertyInfo => values.ContainsKey(propertyInfo.Name)))
             {
-                if (propertyInfo.PropertyType.IsAssignableFrom(typeof(float)))
-                    propertyInfo.SetValue(this, float.Parse(values[propertyInfo.Name].AsString()), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(int)))
-                    propertyInfo.SetValue(this, values[propertyInfo.Name].AsInteger(), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(bool)))
-                    propertyInfo.SetValue(this, values[propertyInfo.Name].AsBoolean(), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(string)))
-                    propertyInfo.SetValue(this, values[propertyInfo.Name].AsString(), new object[0]);
-                else if (propertyInfo.PropertyType.IsAssignableFrom(typeof(UUID)))
-                    propertyInfo.SetValue(this, values[propertyInfo.Name].AsUUID(), new object[0]);
+                try
+                {
+                    if (propertyInfo.PropertyType.IsAssignableFrom (typeof (float)))
+                        propertyInfo.SetValue (this, float.Parse (values[propertyInfo.Name].AsString ()), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (int)))
+                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsInteger (), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (bool)))
+                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsBoolean (), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (string)))
+                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsString (), new object[0]);
+                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (UUID)))
+                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsUUID (), new object[0]);
+                }
+                catch (Exception ex)
+                {
+                    m_log.Warn ("[StarDust]: Exception reading fromOSD() config: " + ex.ToString ());
+                }
             }
         }
         #endregion
@@ -117,6 +144,12 @@ namespace StarDust.Currency.Interfaces
         {
             get { return m_autoApplyCurrency; }
             set { m_autoApplyCurrency = value; }
+        }
+
+        public bool AllowBankerToHaveNoMoney
+        {
+            get { return m_allowBankerToHaveNoMoney; }
+            set { m_allowBankerToHaveNoMoney = value; }
         }
 
         public string AfterCurrencyPurchaseMessage

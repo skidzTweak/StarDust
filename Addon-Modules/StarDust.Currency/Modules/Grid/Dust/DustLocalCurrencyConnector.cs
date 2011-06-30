@@ -27,7 +27,7 @@ namespace StarDust.Currency.Grid.Dust
                 return;
             m_gd = gd;
 
-            if (source.Configs["Handlers"].GetString("CurrencyHandler", "") != "StarDust")
+            if (source.Configs["Currency"].GetString("Module", "") != "StarDust")
                 return;
 
             IConfig economyConfig = source.Configs["StarDustCurrency"];
@@ -151,7 +151,7 @@ namespace StarDust.Currency.Grid.Dust
                             new[] { "TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated", "RawPayPalTransactionData" },
                             new[] { "PurchaseID" },
                             new object[] { purchaseID.ToString() });
-                transaction = trans;
+                transaction = TransactionFromPurchase (purchaseID);
                 return true;
             }
             transaction = trans;
@@ -325,7 +325,9 @@ namespace StarDust.Currency.Grid.Dust
             StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
 
             // Ensure sender has enough money
-            if (fromBalance.Amount < transaction.Amount)
+            if ((!m_options.AllowBankerToHaveNoMoney || 
+                (m_options.AllowBankerToHaveNoMoney && m_options.BankerPrincipalID != new UUID(transaction.FromID))) &&
+                fromBalance.Amount < transaction.Amount)
             {
                 transaction.Complete = 0;
                 transaction.CompleteReason = "Send amount is greater than sender has";
@@ -417,7 +419,7 @@ namespace StarDust.Currency.Grid.Dust
                 transaction.Region.RegionName,          // RegionName
                 transaction.Region.RegionID,            // RegionID
                 transaction.Region.RegionPosition,      // RegionPos
-                transaction.TypeOfTrans,                // TransType 
+                (int)transaction.TypeOfTrans,                // TransType 
                 Utils.GetUnixTime(),                    // Created
                 Utils.GetUnixTime(),                     // Updated
                 0,                                      //ToBalance
