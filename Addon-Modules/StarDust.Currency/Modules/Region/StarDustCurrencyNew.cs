@@ -17,7 +17,7 @@ namespace StarDust.Currency.Region
     public class StarDustCurrencyNew : MoneyModule, ISharedRegionModule
     {
         public static RSACryptoServiceProvider rsa;
-        private readonly List<Scene> m_scenes = new List<Scene>();
+        private readonly List<IScene> m_scenes = new List<IScene> ();
         private int m_objectCapacity;
 
         #region ISharedRegionModule
@@ -36,7 +36,7 @@ namespace StarDust.Currency.Region
             });
         }
 
-        public void AddRegion(Scene scene)
+        public void AddRegion (IScene scene)
         {
             if (scene == null) throw new ArgumentNullException("scene");
             if (!m_enabled)
@@ -53,7 +53,8 @@ namespace StarDust.Currency.Region
             server.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this, 0, scene));
 
             m_objectCapacity = scene.RegionInfo.ObjectCapacity;
-            scene.RegisterModuleInterface<IMoneyModule>(this);
+            scene.RegisterModuleInterface<IMoneyModule> (this);
+            scene.RegisterModuleInterface<StarDustCurrencyNew> (this);
             m_scenes.Add(scene);
 
             scene.EventManager.OnNewClient += OnNewClient;
@@ -63,13 +64,13 @@ namespace StarDust.Currency.Region
             m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0}{1} ", server.HostName, server.Port);
         }
 
-        public void RegionLoaded(Scene scene)
+        public void RegionLoaded (IScene scene)
         {
             if (m_connector == null) return;
             m_options = m_connector.GetConfig();
         }
 
-        public void RemoveRegion(Scene scene)
+        public void RemoveRegion (IScene scene)
         {
             // clean up on removing region
             scene.EventManager.OnNewClient -= OnNewClient;
@@ -148,9 +149,9 @@ namespace StarDust.Currency.Region
             return m_scenes[0].UserAccountService.GetUserAccount(UUID.Zero, agentId);
         }
 
-        protected override ISceneChildEntity FindObject(UUID objectID, out Scene scene)
+        protected override ISceneChildEntity FindObject (UUID objectID, out IScene scene)
         {
-            foreach (Scene s in m_scenes)
+            foreach (IScene s in m_scenes)
             {
                 ISceneChildEntity obj;
                 s.TryGetPart(objectID, out obj);
@@ -162,7 +163,7 @@ namespace StarDust.Currency.Region
             return null;
         }
 
-        public override Scene FindScene(UUID agentId)
+        public override IScene FindScene (UUID agentId)
         {
             return (from s in m_scenes
                     let presence = s.GetScenePresence(agentId)
@@ -297,7 +298,7 @@ namespace StarDust.Currency.Region
         /// <returns></returns>
         public override bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
         {
-            Scene agentSp = FindScene(toId);
+            IScene agentSp = FindScene (toId);
             if (agentSp == null)
                 return (goDeep) ? m_connector.SendGridMessage(toId, message, false, transactionId) : false;
             else

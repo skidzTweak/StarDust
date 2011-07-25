@@ -45,7 +45,7 @@ namespace StarDust.Currency.Grid.Dust
             m_options = new StarDustConfig(source.Configs["StarDustCurrency"]);
 
             IConfig handlerConfig = source.Configs["Handlers"];
-            IHttpServer server = registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer ((uint)source.Configs["Handlers"].GetInt ("LLLoginHandlerPort"));
+            IHttpServer server = registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer ((uint)source.Configs["Handlers"].GetInt ("LLLoginHandlerPort", 0));
             m_registry.RequestModuleInterface<IGridRegistrationService>().RegisterModule(this);
 
             server.AddXmlRPCHandler("getCurrencyQuote", QuoteFunc);

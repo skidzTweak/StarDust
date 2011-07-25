@@ -17,7 +17,6 @@ namespace StarDust.Currency.Interfaces
         protected bool m_enabled;
         protected IStarDustCurrencyService m_connector;
         protected const string version = "0.1";
-        private readonly List<Scene> m_scenes = new List<Scene>();
         protected IRegistryCore m_registry = null;
 
         public virtual StarDustUserCurrency UserCurrencyInfo(UUID agentId)
@@ -85,7 +84,7 @@ namespace StarDust.Currency.Interfaces
 
 
             string transactionPosition = "";
-            Scene scene = null;
+            IScene scene = null;
             string fromObjectName = "";
             string toObjectName = "";
 
@@ -126,8 +125,6 @@ namespace StarDust.Currency.Interfaces
 
             if (transactionPosition.Length == 0)
                 transactionPosition = "Unknown";
-            if ((scene == null) && (m_scenes.Count > 0))
-                scene = m_scenes[0];
 
             RegionTransactionDetails r = new RegionTransactionDetails();
             ICapsService capsService;
@@ -404,12 +401,12 @@ namespace StarDust.Currency.Interfaces
         }
 
 
-        public virtual Scene FindScene(UUID fromID)
+        public virtual IScene FindScene (UUID fromID)
         {
             return null;
         }
 
-        protected virtual ISceneChildEntity FindObject(UUID fromObjectID, out Scene scene)
+        protected virtual ISceneChildEntity FindObject (UUID fromObjectID, out IScene scene)
         {
             scene = null;
             return null;

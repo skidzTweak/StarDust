@@ -5,7 +5,6 @@ using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using log4net;
-using System.Reflection;
 
 namespace StarDust.Currency.Interfaces
 {
