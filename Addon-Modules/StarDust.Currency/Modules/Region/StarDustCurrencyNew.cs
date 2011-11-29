@@ -49,8 +49,7 @@ namespace StarDust.Currency.Region
                 return;
             }
 
-            IHttpServer server = scene.RequestModuleInterface<ISimulationBase>().GetHttpServer(scene.RegionInfo.HttpPort);
-            server.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this, 0, scene));
+            MainServer.Instance.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this, 0, scene));
 
             m_objectCapacity = scene.RegionInfo.ObjectCapacity;
             scene.RegisterModuleInterface<IMoneyModule> (this);
@@ -61,7 +60,7 @@ namespace StarDust.Currency.Region
             scene.EventManager.OnClosingClient += OnClosingClient;
             scene.EventManager.OnValidateBuyLand += ValidateLandBuy;
 
-            m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0}{1} ", server.HostName, server.Port);
+            m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0} ", MainServer.Instance.ServerURI);
         }
 
         public void RegionLoaded (IScene scene)
@@ -79,8 +78,7 @@ namespace StarDust.Currency.Region
 
             scene.UnregisterModuleInterface<IMoneyModule>(this);
 
-            IHttpServer server = scene.RequestModuleInterface<ISimulationBase>().GetHttpServer(scene.RegionInfo.HttpPort);
-            server.RemoveStreamHandler("POST", "/StarDustRegion");
+            MainServer.Instance.RemoveStreamHandler("POST", "/StarDustRegion");
             m_scenes.Remove(scene);
         }
 

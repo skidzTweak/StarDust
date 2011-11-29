@@ -375,7 +375,7 @@ namespace StarDust.Currency.Grid.Dust
             IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer (port);
             m_options.CurrencyInHandlerPort = server.Port;
             server.AddStreamHandler(new StarDustCurrencyPostHandler(url, this, m_registry, sessionID));
-            m_log.DebugFormat("[DustCurrencyService] GetUrlForRegisteringClient {0}{1} ", server.HostName, server.Port);
+            m_log.DebugFormat("[DustCurrencyService] GetUrlForRegisteringClient {0}", server.ServerURI);
             return url;
         }
 
@@ -386,7 +386,7 @@ namespace StarDust.Currency.Grid.Dust
             IHttpServer server = m_registry.RequestModuleInterface<ISimulationBase> ().GetHttpServer (port);
             m_options.CurrencyInHandlerPort = server.Port;
             server.AddStreamHandler(new StarDustCurrencyPostHandler(url, this, m_registry, sessionID));
-            m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}{1} ", server.HostName, server.Port);
+            m_log.DebugFormat("[DustCurrencyService] AddExistingUrlForClient {0}", server.ServerURI);
         }
 
         public void RemoveUrlForClient(string sessionID, string url, uint port)
