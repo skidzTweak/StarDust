@@ -170,12 +170,17 @@ namespace StarDust.Currency.Grid.Dust
                                                              }
                                                              );
 
-                        Transaction transaction;
                         if (m_options.AutoApplyCurrency && success)
-                            m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete", m_options.AutoApplyCurrency.ToString(), "Auto Complete", out transaction);
-
-
-                        if (success && m_options.AfterCurrencyPurchaseMessage != string.Empty)
+                        {
+                            Transaction transaction;
+                            m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete",
+                                                               m_options.AutoApplyCurrency.ToString(), "Auto Complete",
+                                                               out transaction);
+                            UserCurrencyTransfer(transaction.ToID, m_options.BankerPrincipalID, UUID.Zero, UUID.Zero,
+                                                 transaction.Amount, "Currency Purchase",
+                                                 TransactionType.SystemGenerated, transaction.TransactionID);
+                        }
+                        else if (success && m_options.AfterCurrencyPurchaseMessage != string.Empty)
                             SendGridMessage(agentId, String.Format(m_options.AfterCurrencyPurchaseMessage, purchaseID.ToString()), false, UUID.Zero);
                     }
                 }
