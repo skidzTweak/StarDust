@@ -5,12 +5,12 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Web;
+using Aurora.Framework;
+using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
 using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
 

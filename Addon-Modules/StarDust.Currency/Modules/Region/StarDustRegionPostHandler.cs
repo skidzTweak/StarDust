@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Aurora.Framework;
+using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
 using log4net;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using StarDust.Currency.Interfaces;
 

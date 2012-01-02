@@ -2,7 +2,6 @@
 using Aurora.Framework;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 
 namespace StarDust.Currency.Interfaces
 {

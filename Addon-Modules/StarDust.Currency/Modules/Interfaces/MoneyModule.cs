@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Aurora.Framework;
 using log4net;
 using Nini.Config;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
 
 namespace StarDust.Currency.Interfaces

@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
-using OpenSim.Framework;
-using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Region.Framework.Scenes;
 using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
 

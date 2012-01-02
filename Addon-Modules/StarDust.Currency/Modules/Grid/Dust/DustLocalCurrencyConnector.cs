@@ -7,7 +7,6 @@ using log4net;
 using OpenMetaverse;
 using Nini.Config;
 using OpenMetaverse.StructuredData;
-using OpenSim.Framework;
 using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Grid.Dust
