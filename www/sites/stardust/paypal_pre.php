@@ -48,9 +48,9 @@ if ($_SESSION[purchase_id] != '')
 	}
 	else
 	{
-		echo("here");
+		//echo("here");
 		$_SESSION[paypalAmount] = $recieved->{'USDAmount'} / 100;
-		echo("here2");
+		//echo("here2");
 		if ($recieved->{'PurchaseType'} == "1")
 		{
 			$_SESSION[paypalPurchaseItem] = "Currency Purchase of ".$recieved->{'Amount'};
@@ -61,7 +61,7 @@ if ($_SESSION[purchase_id] != '')
 			$_SESSION[paypalPurchaseItem] = $recieved->{'RegionName'} . " Region";
 			$_SESSION[purchase_type] = "_xclick-subscriptions";
 		}
-		echo("here3");
+		//echo("here3");
 		?>
 		<table>
 			<thead>
