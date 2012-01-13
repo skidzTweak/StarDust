@@ -300,6 +300,14 @@ namespace StarDust.Currency.Grid.Dust
             return response;
         }
 
+        public bool CheckIfPurchaseComplete(OSDMap payPalResponse)
+        {
+            OSDMap result = PrePurchaseCheck(payPalResponse["custom"].AsUUID());
+            if (result.ContainsKey("Complete"))
+                return result["Complete"].AsInteger() != 0;
+            return false;
+        }
+
         #endregion
 
         #region private currency handlers

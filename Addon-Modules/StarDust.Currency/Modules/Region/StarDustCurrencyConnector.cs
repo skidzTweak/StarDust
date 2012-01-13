@@ -126,6 +126,11 @@ namespace StarDust.Currency.Region
             throw new NotImplementedException();
         }
 
+        public bool CheckiFAlreadyComplete(OSDMap map)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Private Functions

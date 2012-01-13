@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -203,6 +204,10 @@ namespace StarDust.Currency.Grid
                     {
                         return Validate(map);
                     }
+                    if (method == "IPNData")
+                    {
+                        return Validate2(map);
+                    }
                     if (method == "CheckPurchaseStatus")
                     {
                         return PrePurchaseCheck(map);
@@ -240,13 +245,56 @@ namespace StarDust.Currency.Grid
             string tx = map["tx"].AsString();
             string raw;
             OSDMap resp;
-            if ((GetPayPalData(tx, out raw, out resp)) && (m_starDustCurrencyService.FinishPurchase(resp, raw)))
+            bool confirmPaypal = GetPayPalData(tx, out raw, out resp);
+            if (confirmPaypal)
             {
-                if (resp.ContainsKey("Verified"))
+                bool checkIfAlreadyComplete = m_starDustCurrencyService.CheckiFAlreadyComplete(resp);
+                if (checkIfAlreadyComplete)
+                {
                     resp["Verified"] = OSD.FromBoolean(true);
+                    resp["CompleteType"] = OSD.FromString("ALREADYDONE");
+
+                }
+                else if (m_starDustCurrencyService.FinishPurchase(resp, raw))
+                {
+                    if (resp.ContainsKey("Verified"))
+                        resp["Verified"] = OSD.FromBoolean(true);
+                    else
+                        resp.Add("Verified", OSD.FromBoolean(true));
+                    resp["CompleteType"] = OSD.FromString("JUSTFINISHED");
+                    resp.Add("STARDUSTCOMPLETE", true);
+                }
                 else
-                    resp.Add("Verified", OSD.FromBoolean(true));
+                {
+                    resp["Verified"] = OSD.FromBoolean(false);
+                    resp["CompleteType"] = OSD.FromString("UNKNOWISSUE");
+                }
+            }
+            else
+            {
+                resp["Verified"] = OSD.FromBoolean(false);
+                resp["CompleteType"] = OSD.FromString("UNKNOWISSUE");
+            }
+
+            string xmlString = OSDParser.SerializeJsonString(resp);
+            UTF8Encoding encoding = new UTF8Encoding();
+            return encoding.GetBytes(xmlString);
+        }
+
+        private byte[] Validate2(OSDMap map)
+        {
+            // it really doesn't matter what we return here since this is only called from paypal
+            string raw = map["req"].AsString();
+            OSDMap resp = new OSDMap();
+            bool IPNCheck = IPNData(raw);
+            if ((IPNCheck) && (m_starDustCurrencyService.FinishPurchase(map, raw)))
+            {
+                resp["Verified"] = OSD.FromBoolean(true);
                 resp.Add("STARDUSTCOMPLETE", true);
+            }
+            else if (IPNCheck)
+            {
+                resp["Verified"] = OSD.FromBoolean(true);
             }
             else
                 resp["Verified"] = OSD.FromBoolean(false);
@@ -353,6 +401,53 @@ namespace StarDust.Currency.Grid
             results = returnResults;
             return strResponse.Substring(0, "SUCCESS".Length) == "SUCCESS";
         }
+
+        private bool IPNData(string postedData)
+        {
+            //Post back to either sandbox or live
+            string strSandbox = "https://www.sandbox.paypal.com/cgi-bin/webscr";
+            string strLive = "https://www.paypal.com/cgi-bin/webscr";
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(strSandbox);
+
+            //Set values for the request back
+            req.Method = "POST";
+            req.ContentType = "application/x-www-form-urlencoded";
+            string strRequest = postedData;
+            strRequest += "&cmd=_notify-validate";
+            req.ContentLength = strRequest.Length;
+
+            //for proxy
+            //WebProxy proxy = new WebProxy(new Uri("http://url:port#"));
+            //req.Proxy = proxy;
+
+            //Send the request to PayPal and get the response
+            StreamWriter streamOut = new StreamWriter(req.GetRequestStream(), Encoding.ASCII);
+            streamOut.Write(strRequest);
+            streamOut.Close();
+            StreamReader streamIn = new StreamReader(req.GetResponse().GetResponseStream());
+            string strResponse = streamIn.ReadToEnd();
+            streamIn.Close();
+            if (strResponse == "VERIFIED")
+            {
+                //check the payment_status is Completed
+                //check that txn_id has not been previously processed
+                //check that receiver_email is your Primary PayPal email
+                //check that payment_amount/payment_currency are correct
+                //process payment
+                return true;
+            }
+            else if (strResponse == "INVALID")
+            {
+                //log for manual investigation
+                return false;
+            }
+            else
+            {
+                
+            }
+            return false;
+        }
+
 
         #endregion
     }

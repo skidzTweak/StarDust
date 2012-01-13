@@ -403,6 +403,11 @@ namespace StarDust.Currency.Grid.Dust
 
         #region WebUI Functions
 
+        public bool CheckiFAlreadyComplete(OSDMap PayPalResponse)
+        {
+            return m_database.CheckIfPurchaseComplete(PayPalResponse);
+        }
+
         public bool FinishPurchase(OSDMap PayPalResponse, string rawResponse)
         {
             Transaction transaction;
