@@ -109,28 +109,31 @@ namespace StarDust.Currency.Interfaces
 
         public void FromOSD(OSDMap values)
         {
-            foreach (PropertyInfo propertyInfo in
-                GetType().GetProperties().Where(propertyInfo => values.ContainsKey(propertyInfo.Name)))
+            foreach (PropertyInfo propertyInfo in GetType().GetProperties())
             {
-                try
+                if (values.ContainsKey(propertyInfo.Name))
                 {
-                    if (propertyInfo.PropertyType.IsAssignableFrom (typeof (float)))
-                        propertyInfo.SetValue (this, float.Parse (values[propertyInfo.Name].AsString ()), new object[0]);
-                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (int)))
-                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsInteger (), new object[0]);
-                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (bool)))
-                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsBoolean (), new object[0]);
-                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (string)))
-                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsString (), new object[0]);
-                    else if (propertyInfo.PropertyType.IsAssignableFrom (typeof (UUID)))
-                        propertyInfo.SetValue (this, values[propertyInfo.Name].AsUUID (), new object[0]);
-                }
-                catch (Exception ex)
-                {
-                    m_log.Warn ("[StarDust]: Exception reading fromOSD() config: " + ex.ToString ());
+                    try
+                    {
+                        if (propertyInfo.PropertyType.IsAssignableFrom(typeof (float)))
+                            propertyInfo.SetValue(this, float.Parse(values[propertyInfo.Name].AsString()), new object[0]);
+                        else if (propertyInfo.PropertyType.IsAssignableFrom(typeof (int)))
+                            propertyInfo.SetValue(this, values[propertyInfo.Name].AsInteger(), new object[0]);
+                        else if (propertyInfo.PropertyType.IsAssignableFrom(typeof (bool)))
+                            propertyInfo.SetValue(this, values[propertyInfo.Name].AsBoolean(), new object[0]);
+                        else if (propertyInfo.PropertyType.IsAssignableFrom(typeof (string)))
+                            propertyInfo.SetValue(this, values[propertyInfo.Name].AsString(), new object[0]);
+                        else if (propertyInfo.PropertyType.IsAssignableFrom(typeof (UUID)))
+                            propertyInfo.SetValue(this, values[propertyInfo.Name].AsUUID(), new object[0]);
+                    }
+                    catch (Exception ex)
+                    {
+                        m_log.Warn("[StarDust]: Exception reading fromOSD() config: " + ex.ToString());
+                    }
                 }
             }
         }
+
         #endregion
         #region properties
         public string ErrorURI

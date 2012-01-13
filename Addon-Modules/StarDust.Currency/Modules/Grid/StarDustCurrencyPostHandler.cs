@@ -394,9 +394,11 @@ namespace StarDust.Currency.Grid
                 return false;
 
             string[] temp_results = raw.Split('\n');
-            foreach (string[] thisLine in
-                temp_results.Select(tempResult => tempResult.Split('=')).Where(thisLine => thisLine.Length == 2))
-                returnResults.Add(Uri.UnescapeDataString(thisLine[0]), Uri.UnescapeDataString(thisLine[1]));
+            foreach (string tempResult in temp_results)
+            {
+                string[] thisLine = tempResult.Split('=');
+                if (thisLine.Length == 2) returnResults.Add(Uri.UnescapeDataString(thisLine[0]), Uri.UnescapeDataString(thisLine[1]));
+            }
 
             results = returnResults;
             return strResponse.Substring(0, "SUCCESS".Length) == "SUCCESS";
