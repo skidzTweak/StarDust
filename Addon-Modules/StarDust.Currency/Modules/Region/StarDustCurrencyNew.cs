@@ -237,9 +237,12 @@ namespace StarDust.Currency.Region
             IParcelManagementModule parcelManagement = agentSp.Scene.RequestModuleInterface<IParcelManagementModule>();
             ILandObject landParcel = null;
             List<ILandObject> land = parcelManagement.AllParcels();
-            foreach (ILandObject landObject in land.Where(landObject => landObject.LandData.LocalID == parcelLocalId))
+            foreach (ILandObject landObject in land)
             {
-                landParcel = landObject;
+                if (landObject.LandData.LocalID == parcelLocalId)
+                {
+                    landParcel = landObject;
+                }
             }
             if (landParcel != null)
             {
