@@ -407,8 +407,7 @@ namespace StarDust.Currency.Grid
         private bool IPNData(string postedData)
         {
             //Post back to either sandbox or live
-            string strSandbox = "https://www.sandbox.paypal.com/cgi-bin/webscr";
-            string strLive = "https://www.paypal.com/cgi-bin/webscr";
+            string strSandbox = "https://" + m_options.PayPalURL + "/cgi-bin/webscr";
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(strSandbox);
 
             //Set values for the request back
