@@ -62,7 +62,12 @@ namespace StarDust.Currency.Grid.Dust
         public StarDustUserCurrency GetUserCurrency(UUID agentId)
         {
             StarDustUserCurrency starDustUser = new StarDustUserCurrency { PrincipalID = agentId, Amount = 0, LandInUse = 0, Tier = 0 };
-            List<string> query = m_gd.Query("PrincipalID", agentId, "stardust_currency", "*");
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["PrincipalID"] = agentId;
+            List<string> query = m_gd.Query(new string[] { "*" }, "stardust_currency", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
 
             if (query.Count == 0)
             {
@@ -150,7 +155,7 @@ namespace StarDust.Currency.Grid.Dust
                             new[] { "TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated", "RawPayPalTransactionData" },
                             new[] { "PurchaseID" },
                             new object[] { purchaseID.ToString() });
-                transaction = TransactionFromPurchase (purchaseID);
+                transaction = TransactionFromPurchase(purchaseID);
                 return true;
             }
             transaction = trans;
@@ -165,8 +170,14 @@ namespace StarDust.Currency.Grid.Dust
         /// <returns></returns>
         private Transaction TransactionFromPurchase(UUID purchaseID)
         {
-            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
-                                            "Amount, Complete, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName, PurchaseType, TransactionID");
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["PurchaseID"] = purchaseID;
+            List<string> query = m_gd.Query(new string[] { "Amount", "Complete", "Updated", "PrincipalID", "RegionName", "RegionID", "RegionPos", "userName", "PurchaseType", "TransactionID" }, "stardust_purchased", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
+
+
             if (query.Count == 0)
             {
                 m_log.Warn("[DustLocalCurrencyConnector] Purchase ID not found");
@@ -196,8 +207,13 @@ namespace StarDust.Currency.Grid.Dust
         public bool FinishPurchase(OSDMap payPalResponse, string raw, out Transaction transaction, out int purchaseType)
         {
             UUID purchaseID = payPalResponse["custom"].AsUUID();
-            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
-                                            "Amount, Complete, PurchaseType, Updated, PrincipalID, RegionName, RegionID, RegionPos, userName, USDAmount");
+
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["PurchaseID"] = purchaseID;
+            List<string> query = m_gd.Query(new string[] { "Amount", "Complete", "PurchaseType", "Updated", "PrincipalID", "RegionName", "RegionID", "RegionPos", "userName", "USDAmount" }, "stardust_purchased", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
             if (query.Count != 10)
             {
                 m_log.Error("No such purchase ID");
@@ -237,8 +253,13 @@ namespace StarDust.Currency.Grid.Dust
 
         public OSDMap PrePurchaseCheck(UUID purchaseID)
         {
-            List<string> query = m_gd.Query("PurchaseID", purchaseID, "stardust_purchased",
-                                            "Amount, Complete, PurchaseType, PrincipalID, RegionName, ConversionFactor, USDAmount");
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["PurchaseID"] = purchaseID;
+            List<string> query = m_gd.Query(new string[] { "Amount", "Complete", "PurchaseType", "PrincipalID", "RegionName", "ConversionFactor", "USDAmount" }, "stardust_purchased", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
+
 
             if (query.Count > 0)
             {
@@ -258,8 +279,13 @@ namespace StarDust.Currency.Grid.Dust
 
         public OSDMap OrderSubscription(UUID toId, string toName, string RegionName, string notes, string subscription_id)
         {
-            List<string> query = m_gd.Query("id", subscription_id, "stardust_subscriptions",
-                                            "name, description, price, active");
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["id"] = subscription_id;
+            List<string> query = m_gd.Query(new string[] { "name", "description", "price", "active" }, "stardust_subscriptions", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
+
             OSDMap response = new OSDMap();
             if (query.Count == 4)
             {
@@ -332,7 +358,7 @@ namespace StarDust.Currency.Grid.Dust
             StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
 
             // Ensure sender has enough money
-            if ((!m_options.AllowBankerToHaveNoMoney || 
+            if ((!m_options.AllowBankerToHaveNoMoney ||
                 (m_options.AllowBankerToHaveNoMoney && m_options.BankerPrincipalID != new UUID(transaction.FromID))) &&
                 fromBalance.Amount < transaction.Amount)
             {
@@ -388,8 +414,14 @@ namespace StarDust.Currency.Grid.Dust
 
             if (transaction.TransactionID != UUID.Zero)
             {
-                List<string> query = m_gd.Query("TransactionID", transaction.TransactionID, "stardust_currency_history",
-                                            "count(*)");
+
+                Dictionary<string, object> where = new Dictionary<string, object>(1);
+                where["TransactionID"] = transaction.TransactionID;
+                List<string> query = m_gd.Query(new string[] { "count(*)" }, "stardust_currency_history", new QueryFilter()
+                {
+                    andFilters = where
+                }, null, null, null);
+
                 if (int.Parse(query[0]) >= 1)
                 {
                     m_gd.Update("stardust_currency_history",

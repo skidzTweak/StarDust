@@ -373,6 +373,11 @@ namespace StarDust.Currency.Grid.Dust
             get { return "StarDustURI"; }
         }
 
+        public bool DoMultiplePorts
+        {
+            get { return true; }
+        }
+
         public string GetUrlForRegisteringClient(string sessionID, uint port)
         {
             string url = "/StarDust" + UUID.Random();
