@@ -87,10 +87,9 @@ namespace StarDust.Currency.Grid.Dust
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
             m_gd.Update("stardust_currency",
-                        new object[] { agent.LandInUse, agent.Tier },
-                        new[] { "LandInUse", "Tier" },
-                        new[] { "PrincipalID" },
-                        new object[] { agent.PrincipalID });
+                        new Dictionary<string, object> { { "LandInUse", agent.LandInUse }, { "Tier", agent.Tier } }, null,
+                        new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", agent.PrincipalID } } }
+                        , null, null);
             return true;
         }
 
@@ -150,11 +149,18 @@ namespace StarDust.Currency.Grid.Dust
             Transaction trans = TransactionFromPurchase(purchaseID);
             if (trans.Complete == 0)
             {
+                Dictionary<string, object> where = new Dictionary<string, object>() { { "PurchaseID", purchaseID.ToString() } };
                 m_gd.Update("stardust_purchased",
-                            new object[] { trans.TransactionID, isComplete, completeMethod, completeReference, Utils.GetUnixTime(), rawdata },
-                            new[] { "TransactionID", "Complete", "CompleteMethod", "CompleteReference", "Updated", "RawPayPalTransactionData" },
-                            new[] { "PurchaseID" },
-                            new object[] { purchaseID.ToString() });
+                            new Dictionary<string, object>
+                                {
+                                    {"TransactionID", trans.TransactionID},
+                                    {"Complete", isComplete},
+                                    {"CompleteMethod", completeMethod},
+                                    {"CompleteReference", completeReference},
+                                    {"Updated", Utils.GetUnixTime()},
+                                    {"RawPayPalTransactionData", rawdata}
+                                }, null,
+                            new QueryFilter() { andFilters = where }, null, null);
                 transaction = TransactionFromPurchase(purchaseID);
                 return true;
             }
@@ -370,16 +376,17 @@ namespace StarDust.Currency.Grid.Dust
             }
 
             // update sender
-            m_gd.Update("stardust_currency", new object[] { fromBalance.Amount - transaction.Amount },
-                        new[] { "Amount" }, new[] { "PrincipalID" },
-                        new object[] { transaction.FromID });
+            m_gd.Update("stardust_currency",
+                        new Dictionary<string, object> { { "Amount", fromBalance.Amount - transaction.Amount } }, null,
+                        new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", transaction.FromID } } }, null,
+                        null);
 
             StarDustUserCurrency toBalance = GetUserCurrency(new UUID(transaction.ToID));
+            m_gd.Update("stardust_currency",
+                        new Dictionary<string, object> { { "Amount", toBalance.Amount + transaction.Amount } }, null,
+                        new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", transaction.ToID } } }, null,
+                        null);
 
-            // update receiver
-            m_gd.Update("stardust_currency", new object[] { toBalance.Amount + transaction.Amount },
-                        new[] { "Amount" }, new[] { "PrincipalID" },
-                        new object[] { transaction.ToID });
 
             // update logs
             transaction.Complete = 1;
@@ -415,8 +422,7 @@ namespace StarDust.Currency.Grid.Dust
             if (transaction.TransactionID != UUID.Zero)
             {
 
-                Dictionary<string, object> where = new Dictionary<string, object>(1);
-                where["TransactionID"] = transaction.TransactionID;
+                Dictionary<string, object> where = new Dictionary<string, object>() { { "TransactionID", transaction.TransactionID } };
                 List<string> query = m_gd.Query(new string[] { "count(*)" }, "stardust_currency_history", new QueryFilter()
                 {
                     andFilters = where
@@ -425,14 +431,20 @@ namespace StarDust.Currency.Grid.Dust
                 if (int.Parse(query[0]) >= 1)
                 {
                     m_gd.Update("stardust_currency_history",
-                                new object[]
+                                new Dictionary<string, object>
                                     {
-                                        transaction.Complete, transaction.CompleteReason, Utils.GetUnixTime(),
-                                        transaction.ToBalance, transaction.FromBalance
-                                    },
-                                new[] { "Complete", "CompleteReason", "Updated", "ToBalance", "FromBalance" },
-                                new[] { "TransactionID" },
-                                new object[] { transaction.TransactionID });
+                                        {"Complete", transaction.Complete},
+                                        {"CompleteReason", transaction.CompleteReason},
+                                        {"Updated", Utils.GetUnixTime()},
+                                        {"ToBalance", transaction.ToBalance},
+                                        {"FromBalance", transaction.FromBalance}
+                                    }, null,
+                                new QueryFilter()
+                                {
+                                    andFilters =
+                                        new Dictionary<string, object> { { "TransactionID", transaction.TransactionID } }
+                                },
+                                null, null);
                     trans = transaction;
                     return true;
                 }
