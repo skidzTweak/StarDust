@@ -53,9 +53,9 @@ namespace StarDust.Currency.Grid.Dust
             server.AddXmlRPCHandler("buyLandPrep", LandBuyFunc);
             server.AddXmlRPCHandler("getBalance", GetbalanceFunc);
 
-            string Password = handlerConfig.GetString("WireduxHandlerPassword", String.Empty);
+            string Password = handlerConfig.GetString("WireduxHandlerPassword", handlerConfig.GetString("WebUIHandlerPassword", string.Empty));
             if (Password == "") return;
-            IHttpServer m_server = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(handlerConfig.GetUInt("WireduxHandlerPort"));
+            IHttpServer m_server = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(handlerConfig.GetUInt("WireduxHandlerPort", handlerConfig.GetUInt("WebUIHTTPPort", 8002)));
             m_server.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry, Password, m_options));
         }
 
