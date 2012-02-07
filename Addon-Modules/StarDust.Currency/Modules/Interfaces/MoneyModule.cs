@@ -28,10 +28,6 @@ namespace StarDust.Currency.Interfaces
             return UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay, UUID.Random());
         }
 
-        public virtual int Balance(IClientAPI client)
-        {
-            return (int)UserCurrencyInfo(client.AgentId).Amount;
-        }
 
         #region IMoneyModule
 
@@ -61,6 +57,8 @@ namespace StarDust.Currency.Interfaces
         {
             return UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type, UUID.Random());
         }
+
+
 
         /// <summary>
         /// This is the function that everythign really happens Grid and Region Side
@@ -354,6 +352,31 @@ namespace StarDust.Currency.Interfaces
         {
             if (OnPostObjectPaid != null)
                 OnPostObjectPaid(localID, regionHandle, agentID, amount);
+        }
+
+        #endregion
+
+        #region Balance
+
+        public int Balance(UUID agentID)
+        {
+            return (int)UserCurrencyInfo(agentID).Amount;
+        }
+
+        public virtual int Balance(IClientAPI client)
+        {
+            return (int)UserCurrencyInfo(client.AgentId).Amount;
+        }
+
+        public List<GroupAccountHistory> GetTransactions(UUID groupID, UUID agentID, int currentInterval, int intervalDays)
+        {
+            // not done yet
+            return new List<GroupAccountHistory>();
+        }
+
+        public virtual GroupBalance GetGroupBalance(UUID groupID)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

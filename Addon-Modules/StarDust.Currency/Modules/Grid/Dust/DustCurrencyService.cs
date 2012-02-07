@@ -93,6 +93,11 @@ namespace StarDust.Currency.Grid.Dust
             return m_options;
         }
 
+        public GroupBalance GetGroupBalance(UUID groupID)
+        {
+            return m_database.GetGroupBalance(groupID);
+        }
+
         #endregion
 
         #region RPC Calls

@@ -249,6 +249,7 @@ namespace StarDust.Currency.Interfaces
         OSDMap PrePurchaseCheck(UUID purchaseId);
         OSDMap OrderSubscription(UUID toId, string regionName, string notes, string subscriptionID);
         bool CheckiFAlreadyComplete(OSDMap map);
+        GroupBalance GetGroupBalance(UUID groupID);
     }
 
     public interface IStarDustCurrencyConnector : IAuroraDataPlugin
@@ -304,5 +305,6 @@ namespace StarDust.Currency.Interfaces
 
         OSDMap OrderSubscription(UUID toId, string toName, string regionName, string notes, string subscriptionID);
         bool CheckIfPurchaseComplete(OSDMap payPalResponse);
+        GroupBalance GetGroupBalance(UUID groupID);
     }
 }

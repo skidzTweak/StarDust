@@ -282,6 +282,11 @@ namespace StarDust.Currency.Region
             return (int)UserCurrencyInfo(client.AgentId).Amount;
         }
 
+        public override GroupBalance GetGroupBalance(UUID groupID)
+        {
+            return m_connector.GetGroupBalance(groupID);
+        }
+
         #endregion
 
         #region other

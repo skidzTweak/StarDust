@@ -63,6 +63,9 @@ namespace StarDust.Currency.Grid
                     case "stardust_currencyinfo":
                         return UserCurrencyInfo(map);
 
+                    case "stardust_groupcurrencyinfo":
+                        return GroupCurrencyInfo(map);
+
                     case "stardust_currencyupdate":
                         return UserCurrencyUpdate(map);
 
@@ -82,6 +85,13 @@ namespace StarDust.Currency.Grid
                 m_log.DebugFormat("[CURRENCY HANDLER]: Exception {0}", e);
             }
             return FailureResult();
+        }
+
+        private byte[] GroupCurrencyInfo(OSDMap map)
+        {
+            OSDMap map2 = m_starDustCurrencyService.GetGroupBalance(map["GroupId"].AsUUID()).ToOSD();
+            map2.Add("Result", "Successful");
+            return Return(map2);
         }
 
         private byte[] SendGridMessage(OSDMap map)
@@ -217,9 +227,14 @@ namespace StarDust.Currency.Grid
                         return OrderSubscription(map);
                     }
                 }
+                else
+                {
+                    m_log.Error("[Stardust] Web password did not match.");
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                m_log.Error("[Stardust] Error processing method", e);
             }
             OSDMap resp = new OSDMap { { "response", OSD.FromString("Failed") } };
             string xmlString = OSDParser.SerializeJsonString(resp);

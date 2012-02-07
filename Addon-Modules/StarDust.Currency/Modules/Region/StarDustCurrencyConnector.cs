@@ -67,6 +67,18 @@ namespace StarDust.Currency.Region
                                                                }, "UserCurrencyInfo"));
         }
 
+        public GroupBalance GetGroupBalance(UUID groupID)
+        {
+            GroupBalance gb = new GroupBalance();
+            OSDMap temp = MakeCallOSDMAP(new OSDMap
+                                             {
+                                                 {"Method", "stardust_groupcurrencyinfo"},
+                                                 {"GroupId", groupID}
+                                             }, "UserCurrencyInfo");
+            gb.FromOSD(temp);
+            return gb;
+        }
+
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
             OSDMap osdMap = agent.ToOSD();
@@ -130,6 +142,8 @@ namespace StarDust.Currency.Region
         {
             throw new NotImplementedException();
         }
+
+
 
         #endregion
 

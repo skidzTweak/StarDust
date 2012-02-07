@@ -93,6 +93,37 @@ namespace StarDust.Currency.Grid.Dust
             return true;
         }
 
+
+        public GroupBalance GetGroupBalance(UUID groupID)
+        {
+            GroupBalance gb = new GroupBalance()
+                                  {
+                                      GroupFee = 0,
+                                      LandFee = 0,
+                                      ObjectFee = 0,
+                                      ParcelDirectoryFee = 0,
+                                      TotalTierCredits = 0,
+                                      TotalTierDebit = 0,
+                                      StartingDate = DateTime.UtcNow
+                                  };
+            Dictionary<string, object> where = new Dictionary<string, object>(1);
+            where["PrincipalID"] = groupID;
+            List<string> queryResults = m_gd.Query(new string[] { "*" }, "stardust_currency", new QueryFilter()
+            {
+                andFilters = where
+            }, null, null, null);
+
+            if (queryResults.Count == 0)
+            {
+                GroupCurrencyCreate(groupID);
+                return gb;
+            }
+
+            int.TryParse(queryResults[1], out gb.TotalTierCredits);
+            return gb;
+
+        }
+
         #endregion
 
         #region purchase currency
@@ -212,49 +243,62 @@ namespace StarDust.Currency.Grid.Dust
 
         public bool FinishPurchase(OSDMap payPalResponse, string raw, out Transaction transaction, out int purchaseType)
         {
-            UUID purchaseID = payPalResponse["custom"].AsUUID();
+            if (payPalResponse.ContainsKey("custom"))
+            {
+                UUID purchaseID = payPalResponse["custom"].AsUUID();
 
-            Dictionary<string, object> where = new Dictionary<string, object>(1);
-            where["PurchaseID"] = purchaseID;
-            List<string> query = m_gd.Query(new string[] { "Amount", "Complete", "PurchaseType", "Updated", "PrincipalID", "RegionName", "RegionID", "RegionPos", "userName", "USDAmount" }, "stardust_purchased", new QueryFilter()
-            {
-                andFilters = where
-            }, null, null, null);
-            if (query.Count != 10)
-            {
-                m_log.Error("No such purchase ID");
-                transaction = null;
-                purchaseType = -1;
-                return false;
+                Dictionary<string, object> where = new Dictionary<string, object>(1);
+                where["PurchaseID"] = purchaseID;
+                List<string> query =
+                    m_gd.Query(
+                        new string[]
+                            {
+                                "Amount", "Complete", "PurchaseType", "Updated", "PrincipalID", "RegionName", "RegionID",
+                                "RegionPos", "userName", "USDAmount"
+                            }, "stardust_purchased", new QueryFilter()
+                                                         {
+                                                             andFilters = where
+                                                         }, null, null, null);
+                if (query.Count != 10)
+                {
+                    m_log.Error("No such purchase ID");
+                    transaction = null;
+                    purchaseType = -1;
+                    return false;
+                }
+                if (query[1] == "1")
+                {
+                    m_log.Error("This purchase has already been completed");
+                    transaction = null;
+                    purchaseType = -1;
+                    return false;
+                }
+                if (payPalResponse["payment_status"].AsString() != "Completed")
+                {
+                    Transaction transaction_temp1;
+                    UserCurrencyBuyComplete(purchaseID, 0,
+                                            "payment_status = " + payPalResponse["payment_status"].AsString(),
+                                            payPalResponse["txn_id"].AsString(), raw, out transaction_temp1);
+                    transaction = transaction_temp1;
+                    purchaseType = -1;
+                    return false;
+                }
+                Transaction transaction_temp2;
+                if (
+                    !UserCurrencyBuyComplete(purchaseID, 1, "PayPal", payPalResponse["txn_id"].AsString(), raw,
+                                             out transaction_temp2))
+                {
+                    transaction = null;
+                    purchaseType = -1;
+                    return false;
+                }
+                transaction = transaction_temp2;
+                purchaseType = int.Parse(query[2]);
+                return true;
             }
-            if (query[1] == "1")
-            {
-                m_log.Error("This purchase has already been completed");
-                transaction = null;
-                purchaseType = -1;
-                return false;
-            }
-            if (payPalResponse["payment_status"].AsString() != "Completed")
-            {
-                Transaction transaction_temp1;
-                UserCurrencyBuyComplete(purchaseID, 0, "payment_status = " + payPalResponse["payment_status"].AsString(),
-                                        payPalResponse["txn_id"].AsString(), raw, out transaction_temp1);
-                transaction = transaction_temp1;
-                purchaseType = -1;
-                return false;
-            }
-            Transaction transaction_temp2;
-            if (
-                !UserCurrencyBuyComplete(purchaseID, 1, "PayPal", payPalResponse["txn_id"].AsString(), raw,
-                                         out transaction_temp2))
-            {
-                transaction = null;
-                purchaseType = -1;
-                return false;
-            }
-            transaction = transaction_temp2;
-            purchaseType = int.Parse(query[2]);
-            return true;
+            transaction = null;
+            purchaseType = -999;
+            return false;
         }
 
         public OSDMap PrePurchaseCheck(UUID purchaseID)
@@ -334,11 +378,19 @@ namespace StarDust.Currency.Grid.Dust
 
         public bool CheckIfPurchaseComplete(OSDMap payPalResponse)
         {
-            OSDMap result = PrePurchaseCheck(payPalResponse["custom"].AsUUID());
-            if (result.ContainsKey("Complete"))
-                return result["Complete"].AsInteger() != 0;
+            if (payPalResponse.ContainsKey("custom"))
+            {
+                OSDMap result = PrePurchaseCheck(payPalResponse["custom"].AsUUID());
+                if (result.ContainsKey("Complete"))
+                    return result["Complete"].AsInteger() != 0;
+            }
+            else
+            {
+                m_log.ErrorFormat("[Stardust Currency] The paypal response did not contain the field 'custom' - paypal data: {0} ", payPalResponse);
+            }
             return false;
         }
+
 
         #endregion
 
@@ -482,7 +534,12 @@ namespace StarDust.Currency.Grid.Dust
 
         private void UserCurrencyCreate(UUID agentId)
         {
-            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0 });
+            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 0 });
+        }
+
+        private void GroupCurrencyCreate(UUID agentId)
+        {
+            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 1 });
         }
         #endregion
 
