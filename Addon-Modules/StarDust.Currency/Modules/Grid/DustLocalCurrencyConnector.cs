@@ -9,7 +9,7 @@ using Nini.Config;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
 
-namespace StarDust.Currency.Grid.Dust
+namespace StarDust.Currency.Grid
 {
     public class DustLocalCurrencyConnector : IStarDustCurrencyConnector
     {

@@ -13,11 +13,11 @@ namespace StarDust.Currency.Region
 {
     class StarDustRegionPostHandler : BaseStreamHandler
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly StarDustCurrencyNew m_currenyService;
+        private readonly IStardustRegionService m_currenyService;
 
-        public StarDustRegionPostHandler(string url, StarDustCurrencyNew service, ulong regionHandle, IRegistryCore registry) :
+        public StarDustRegionPostHandler(string url, IStardustRegionService service) :
             base("POST", url)
         {
             m_currenyService = service;

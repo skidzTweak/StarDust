@@ -4,13 +4,13 @@ using Aurora.DataManager.Migration;
 using C5;
 using Aurora.Framework;
 
-namespace StarDust.Currency.Grid.Dust
+namespace StarDust.Currency.Grid
 {
-    public class CurrencyMigrator_1 : Migrator
+    public class CurrencyMigrator_0 : Migrator
     {
-        public CurrencyMigrator_1()
+        public CurrencyMigrator_0()
         {
-            Version = new Version(0, 0, 1);
+            Version = new Version(0, 0, 0);
             MigrationName = "Currency";
 
             schema = new List<Rec<string, ColumnDefinition[], IndexDefinition[]>>();
@@ -19,8 +19,7 @@ namespace StarDust.Currency.Grid.Dust
                 ColDef("PrincipalID", ColumnTypes.String50),
                 ColDef("Amount", ColumnTypes.Integer30),
                 ColDef("LandInUse", ColumnTypes.Integer30),
-                ColDef("Tier", ColumnTypes.Integer30),
-                ColDef("IsGroup", ColumnTypes.TinyInt1)),
+                ColDef("Tier", ColumnTypes.Integer30)),
                 IndexDefs(
                     IndexDef(new string[1] { "PrincipalID" }, IndexType.Primary)
                 ));
@@ -86,14 +85,6 @@ namespace StarDust.Currency.Grid.Dust
                 ), IndexDefs(
                     IndexDef(new string[1] { "id" }, IndexType.Primary)
                 ));
-
-            AddSchema("stardust_group_teir_donation", ColDefs(
-                ColDef("avatar_id", ColumnTypes.String36),
-                ColDef("group_id", ColumnTypes.String36),
-                ColDef("teir", ColumnTypes.Integer30)
-                ), IndexDefs(
-                    IndexDef(new [] { "avatar_id", "group_id" }, IndexType.Primary)
-                ));
         }
 
         protected override void DoCreateDefaults(IDataConnector genericData)
@@ -103,6 +94,18 @@ namespace StarDust.Currency.Grid.Dust
 
         protected override bool DoValidate(IDataConnector genericData)
         {
+            try
+            {
+                QueryFilter filter = new QueryFilter { andIsNullFilters = new List<string>() { "CompleteReason" } };
+                genericData.Update("stardust_currency_history", new Dictionary<string, object>() { { "CompleteReason", "" } }, null, filter, null, null);
+                filter = new QueryFilter { andIsNullFilters = new List<string>() { "TransType" } };
+                genericData.Update("stardust_currency_history", new Dictionary<string, object>() { { "TransType", -1 } }, null, filter, null, null);
+                
+            }
+            catch (Exception)
+            {
+                
+            }
             return TestThatAllTablesValidate(genericData);
         }
 

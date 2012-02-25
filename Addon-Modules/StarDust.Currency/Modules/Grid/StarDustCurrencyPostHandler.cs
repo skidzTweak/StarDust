@@ -17,172 +17,16 @@ using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Grid
 {
-    class StarDustCurrencyPostHandler : BaseStreamHandler
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private readonly IStarDustCurrencyService m_starDustCurrencyService;
-        private readonly IRegistryCore m_registry;
-        private readonly string m_sessionID;
-
-        public StarDustCurrencyPostHandler(string url, IStarDustCurrencyService service, IRegistryCore registry, string sessionID) :
-            base("POST", url)
-        {
-            m_starDustCurrencyService = service;
-            m_registry = registry;
-            m_sessionID = sessionID;
-        }
-
-        #region BaseStreamHandler
-
-        public override byte[] Handle(string path, Stream requestData,
-                OSHttpRequest httpRequest, OSHttpResponse httpResponse)
-        {
-
-            StreamReader sr = new StreamReader(requestData);
-            string body = sr.ReadToEnd();
-            sr.Close();
-            body = body.Trim();
-
-            m_log.DebugFormat("[StarDustCurrencyPostHandler]: query String: {0}", body);
-
-            try
-            {
-                OSDMap map = WebUtils.GetOSDMap(body);
-                IGridRegistrationService urlModule =
-                            m_registry.RequestModuleInterface<IGridRegistrationService>();
-                if ((map == null) || (!map.ContainsKey("Method")) ||
-                    ((urlModule != null) && (!urlModule.CheckThreatLevel(m_sessionID, map["Method"].AsString(), ThreatLevel.High))))
-                {
-                    m_log.Error("[StarDustCurrencyPostHandler] Failed CheckThreatLevel for " + ((!map.ContainsKey("Method")) ? "NO METHED SENT" : map["Method"].AsString()));
-                    return FailureResult();
-                }
-
-                switch (map["Method"].AsString())
-                {
-                    case "stardust_currencyinfo":
-                        return UserCurrencyInfo(map);
-
-                    case "stardust_groupcurrencyinfo":
-                        return GroupCurrencyInfo(map);
-
-                    case "stardust_currencyupdate":
-                        return UserCurrencyUpdate(map);
-
-                    case "stardust_currencytransfer":
-                        return UserCurrencyTransfer(map);
-
-                    case "getconfig":
-                        return GetConfig(map);
-
-                    case "sendgridmessage":
-                        return SendGridMessage(map);
-                }
-                m_log.DebugFormat("[CURRENCY HANDLER]: unknown method {0} request {1}", map["Method"].AsString().Length, map["Method"].AsString());
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[CURRENCY HANDLER]: Exception {0}", e);
-            }
-            return FailureResult();
-        }
-
-        private byte[] GroupCurrencyInfo(OSDMap map)
-        {
-            OSDMap map2 = m_starDustCurrencyService.GetGroupBalance(map["GroupId"].AsUUID()).ToOSD();
-            map2.Add("Result", "Successful");
-            return Return(map2);
-        }
-
-        private byte[] SendGridMessage(OSDMap map)
-        {
-            return m_starDustCurrencyService.SendGridMessage(map["toId"].AsUUID(), map["message"].ToString(), map["goDeep"].AsBoolean(), map["transactionId"].AsUUID())
-                       ? SuccessfulResult()
-                       : FailureResult();
-        }
-
-        private byte[] GetConfig(OSDMap map)
-        {
-            m_log.Info("[StarDustCurrencyPostHandler] Sending config");
-            OSDMap map2 = m_starDustCurrencyService.GetConfig().ToOSD();
-            map2.Add("Result", "Successful");
-            return Return(map2);
-        }
-
-        #endregion
-        #region Currency Functions
-        private byte[] UserCurrencyTransfer(OSDMap request)
-        {
-            Transaction trans = new Transaction();
-            if (trans.FromOSD(request))
-            {
-                OSDMap trans2 = m_starDustCurrencyService.UserCurrencyTransfer(trans).ToOSD();
-                trans2.Add("Result", "Successful");
-                return Return(trans2);
-            }
-            return FailureResult();
-        }
-
-        private byte[] UserCurrencyUpdate(OSDMap request)
-        {
-            StarDustUserCurrency agent = new StarDustUserCurrency();
-            if (agent.FromOSD(request) &&
-                m_starDustCurrencyService.UserCurrencyUpdate(agent))
-                return SuccessfulResult();
-            return FailureResult();
-        }
-
-        private byte[] UserCurrencyInfo(OSDMap request)
-        {
-            UUID agentId;
-            if (UUID.TryParse(request["AgentId"].AsString(), out agentId))
-            {
-                OSDMap results = m_starDustCurrencyService.UserCurrencyInfo(agentId).ToOSD();
-                results.Add("Result", "Successful");
-                return Return(results);
-            }
-            return FailureResult();
-        }
-        #endregion
-        #region Misc
-
-        private byte[] FailureResult()
-        {
-            return Return(new OSDMap
-                              {
-                        {"Result", "Failure"}
-                    });
-        }
-
-        private byte[] SuccessfulResult()
-        {
-            return Return(new OSDMap
-                              {
-                        {"Result", "Successful"}
-                    });
-        }
-
-        private byte[] Return(OSDMap result)
-        {
-            //m_log.DebugFormat("[AuroraDataServerPostHandler]: resp string: {0}", xmlString);
-            return Util.UTF8.GetBytes(OSDParser.SerializeJsonString(result));
-        }
-
-        #endregion
-    }
-
-
-
     class StarDustCurrencyPostHandlerWebUI : BaseStreamHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly IStarDustCurrencyService m_starDustCurrencyService;
+        private readonly DustCurrencyService m_starDustCurrencyService;
         private readonly IRegistryCore m_registry;
         private readonly StarDustConfig m_options;
         private readonly string m_password = "";
 
-        public StarDustCurrencyPostHandlerWebUI(string url, IStarDustCurrencyService service, IRegistryCore registry, string password, StarDustConfig options)
+        public StarDustCurrencyPostHandlerWebUI(string url, DustCurrencyService service, IRegistryCore registry, string password, StarDustConfig options)
             : base("POST", url)
         {
             m_options = options;
@@ -263,14 +107,14 @@ namespace StarDust.Currency.Grid
             bool confirmPaypal = GetPayPalData(tx, out raw, out resp);
             if (confirmPaypal)
             {
-                bool checkIfAlreadyComplete = m_starDustCurrencyService.CheckiFAlreadyComplete(resp);
+                bool checkIfAlreadyComplete = CheckiFAlreadyComplete(resp);
                 if (checkIfAlreadyComplete)
                 {
                     resp["Verified"] = OSD.FromBoolean(true);
                     resp["CompleteType"] = OSD.FromString("ALREADYDONE");
 
                 }
-                else if (m_starDustCurrencyService.FinishPurchase(resp, raw))
+                else if (FinishPurchase(resp, raw))
                 {
                     if (resp.ContainsKey("Verified"))
                         resp["Verified"] = OSD.FromBoolean(true);
@@ -302,7 +146,7 @@ namespace StarDust.Currency.Grid
             string raw = map["req"].AsString();
             OSDMap resp = new OSDMap();
             bool IPNCheck = IPNData(raw);
-            if ((IPNCheck) && (m_starDustCurrencyService.FinishPurchase(map, raw)))
+            if ((IPNCheck) && (FinishPurchase(map, raw)))
             {
                 resp["Verified"] = OSD.FromBoolean(true);
                 resp.Add("STARDUSTCOMPLETE", true);
@@ -322,7 +166,7 @@ namespace StarDust.Currency.Grid
         private byte[] PrePurchaseCheck(OSDMap map)
         {
             UUID purchaseId = map["purchase_id"].AsUUID();
-            OSDMap resp = m_starDustCurrencyService.PrePurchaseCheck(purchaseId);
+            OSDMap resp = PrePurchaseCheck(purchaseId);
             resp.Add("Verified", OSD.FromBoolean(false));
             resp.Add("FailNumber", "0");
             resp.Add("Reason", "");
@@ -350,7 +194,7 @@ namespace StarDust.Currency.Grid
             string regionName = map["regionName"].ToString();
             string notes = map["notes"].AsString();
             string subscription_id = map["subscription_id"].AsString();
-            OSDMap response = m_starDustCurrencyService.OrderSubscription(toId, regionName, notes, subscription_id);
+            OSDMap response = OrderSubscription(toId, regionName, notes, subscription_id);
 
             response.Add("Verified", OSD.FromBoolean(response.ContainsKey("purchaseID")));
 
@@ -464,6 +308,54 @@ namespace StarDust.Currency.Grid
             return false;
         }
 
+
+        #endregion
+
+        #region WebUI Functions
+
+        public bool CheckiFAlreadyComplete(OSDMap payPalResponse)
+        {
+            return m_starDustCurrencyService.Database.CheckIfPurchaseComplete(payPalResponse);
+        }
+
+        public GroupBalance GetGroupBalance(UUID groupID)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
+        public bool FinishPurchase(OSDMap payPalResponse, string rawResponse)
+        {
+            Transaction transaction;
+            int purchaseType;
+            if (m_starDustCurrencyService.Database.FinishPurchase(payPalResponse, rawResponse, out transaction, out purchaseType))
+            {
+                if (purchaseType == 1)
+                {
+                    if (m_starDustCurrencyService.UserCurrencyTransfer(transaction.ToID, m_options.BankerPrincipalID, UUID.Zero, UUID.Zero,
+                                                 transaction.Amount, "Currency Purchase",
+                                                 TransactionType.SystemGenerated, transaction.TransactionID))
+                    {
+                        return true;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public OSDMap PrePurchaseCheck(UUID purchaseId)
+        {
+            return m_starDustCurrencyService.Database.PrePurchaseCheck(purchaseId);
+        }
+
+        public OSDMap OrderSubscription(UUID toId, string regionName, string notes, string subscriptionID)
+        {
+
+            string toName = m_starDustCurrencyService.GetUserAccount(toId).Name;
+            return m_starDustCurrencyService.Database.OrderSubscription(toId, toName, regionName, notes, subscriptionID);
+        }
 
         #endregion
     }

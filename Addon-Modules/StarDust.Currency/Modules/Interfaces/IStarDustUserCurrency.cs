@@ -2,10 +2,11 @@
 using Aurora.Framework;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
+using OpenSim.Services.Interfaces;
 
 namespace StarDust.Currency.Interfaces
 {
-    public class RegionTransactionDetails
+    public sealed class RegionTransactionDetails: IDataTransferable
     {
         public UUID RegionID = UUID.Zero;
         public string RegionName = "";
@@ -22,7 +23,7 @@ namespace StarDust.Currency.Interfaces
                 FromOSD(osdMap);
         }
 
-        public bool FromOSD(OSDMap osdMap)
+        public override void FromOSD(OSDMap osdMap)
         {
             if (UUID.TryParse(osdMap["RegionID"].AsString(), out RegionID) &&
                 osdMap.ContainsKey("RegionName") &&
@@ -30,12 +31,10 @@ namespace StarDust.Currency.Interfaces
             {
                 RegionName = osdMap["RegionName"].ToString();
                 RegionPosition = osdMap["RegionPosition"].ToString();
-                return true;
             }
-            return false;
         }
 
-        public OSDMap ToOSD()
+        public override OSDMap ToOSD()
         {
             return new OSDMap
                        {
@@ -45,7 +44,7 @@ namespace StarDust.Currency.Interfaces
                        };
         }
     }
-    public class Transaction
+    public class Transaction: IDataTransferable
     {
         public UUID TransactionID = UUID.Zero;
         public string Description = "";
@@ -83,7 +82,7 @@ namespace StarDust.Currency.Interfaces
             return osdMap;
         }
 
-        public bool FromOSD(OSDMap osdMap)
+        public override sealed void FromOSD(OSDMap osdMap)
         {
             if (UUID.TryParse(osdMap["FromID"].AsString(), out FromID) &&
                 uint.TryParse(osdMap["Created"].AsString(), out Created) &&
@@ -112,12 +111,10 @@ namespace StarDust.Currency.Interfaces
                 ToObjectName = (osdMap.ContainsKey("ToObjectName")) ? osdMap["ToObjectName"].AsString() : "";
                 CompleteReason = (osdMap.ContainsKey("CompleteReason")) ? osdMap["CompleteReason"].AsString() : "";
                 Description = (osdMap.ContainsKey("Description")) ? osdMap["Description"].AsString() : "";
-                return true;
             }
-            return false;
         }
 
-        public OSDMap ToOSD()
+        public override OSDMap ToOSD()
         {
             return new OSDMap
             {
@@ -143,7 +140,7 @@ namespace StarDust.Currency.Interfaces
             };
         }
     }
-    public class StarDustUserCurrency
+    public class StarDustUserCurrency : IDataTransferable
     {
         public UUID PrincipalID;
         public uint Amount;
@@ -166,14 +163,13 @@ namespace StarDust.Currency.Interfaces
         /// 
         /// </summary>
         /// <param name="osdMap"></param>
-        public bool FromOSD(OSDMap osdMap)
+        public override sealed void FromOSD(OSDMap osdMap)
         {
             if (UUID.TryParse(osdMap["PrincipalID"].AsString(), out PrincipalID) &&
                 uint.TryParse(osdMap["Amount"].AsString(), out Amount) &&
                 uint.TryParse(osdMap["LandInUse"].AsString(), out LandInUse) &&
                 uint.TryParse(osdMap["Tier"].AsString(), out Tier))
-                return true;
-            return false;
+                return;
         }
 
         public bool FromArray(List<string> queryResults)
@@ -189,7 +185,7 @@ namespace StarDust.Currency.Interfaces
         /// 
         /// </summary>
         /// <returns></returns>
-        public OSDMap ToOSD()
+        public override OSDMap ToOSD()
         {
             return
                 new OSDMap
@@ -205,7 +201,7 @@ namespace StarDust.Currency.Interfaces
         /// 
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, object> ToKeyValuePairs()
+        public override Dictionary<string, object> ToKVP()
         {
             return
                 new Dictionary<string, object>
@@ -223,9 +219,9 @@ namespace StarDust.Currency.Interfaces
         /// <summary>
         /// Get information about the given users currency
         /// </summary>
-        /// <param name="agentID"></param>
+        /// <param name="agentId"></param>
         /// <returns></returns>
-        StarDustUserCurrency UserCurrencyInfo(UUID agentID);
+        StarDustUserCurrency UserCurrencyInfo(UUID agentId);
 
         /// <summary>
         /// Update the currency for the given user (This does not update the user's balance!)
@@ -239,17 +235,21 @@ namespace StarDust.Currency.Interfaces
         /// <param name="transaction"></param>
         /// <returns></returns>
         Transaction UserCurrencyTransfer(Transaction transaction);
-
+        bool UserCurrencyTransfer(UUID toID, UUID fromID, UUID toObjectID, UUID fromObjectID, uint amount,
+                                  string description, TransactionType type, UUID transactionID);
         StarDustConfig GetConfig();
-
         bool SendGridMessage(UUID toID, string message, bool goDeep, UUID transactionId);
+        bool CheckEnabled();
+        void SetMoneyModule(MoneyModule moneyModule);
+        UserAccount GetUserAccount(UUID fromID);
+    }
 
-        bool FinishPurchase(OSDMap resp, string rawResponse);
-
-        OSDMap PrePurchaseCheck(UUID purchaseId);
-        OSDMap OrderSubscription(UUID toId, string regionName, string notes, string subscriptionID);
-        bool CheckiFAlreadyComplete(OSDMap map);
-        GroupBalance GetGroupBalance(UUID groupID);
+    public interface IStardustRegionService
+    {
+        ISceneChildEntity FindObject(UUID fromObjectID, out IScene scene);
+        IScene FindScene(UUID fromID);
+        IClientAPI GetUserClient(UUID fromID);
+        bool SendGridMessage(UUID toID, string message, bool goDeep, UUID transactionId);
     }
 
     public interface IStarDustCurrencyConnector : IAuroraDataPlugin

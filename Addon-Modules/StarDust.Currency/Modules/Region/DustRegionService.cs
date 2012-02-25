@@ -1,57 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
+using System.Reflection;
 using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Region.Framework.Interfaces;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
+using log4net;
 
 namespace StarDust.Currency.Region
 {
-    public class StarDustCurrencyNew : MoneyModule, ISharedRegionModule
+    public class DustRegionService : ISharedRegionModule, IStardustRegionService
     {
-        public static RSACryptoServiceProvider rsa;
-        private readonly List<IScene> m_scenes = new List<IScene> ();
+        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private bool m_enabled = true;
+        private DustCurrencyService m_connector;
         private int m_objectCapacity;
+        private readonly List<IScene> m_scenes = new List<IScene>();
+        private StarDustConfig m_options;
 
-        #region ISharedRegionModule
-        public void Initialise(IConfigSource source)
+        #region Implementation of IRegionModuleBase
+
+        public string Name
         {
-            if (!CheckEnabled("Remote", source))
-                return;
-            DisplayLogo();
-            //MainConsole.Instance.Commands.AddCommand("StarDust Generate Keys", "Generates the security keys for coms",
-            //                                         "Generates the security keys for coms", GenerateKeys);
-            rsa = new RSACryptoServiceProvider(new CspParameters(1)
-            {
-                KeyContainerName = "StarDustContainer",
-                Flags = CspProviderFlags.UseMachineKeyStore,
-                ProviderName = "Microsoft Strong Cryptographic Provider"
-            });
+            get { return "DustRegionService"; }
         }
 
-        public void AddRegion (IScene scene)
+        public Type ReplaceableInterface
+        {
+            get { return null; }
+        }
+
+        public void Initialise(IConfigSource source)
+        {
+            // throw new NotImplementedException();
+        }
+
+        public void AddRegion(IScene scene)
         {
             if (scene == null) throw new ArgumentNullException("scene");
-            if (!m_enabled)
-                return;
+            if (!m_enabled) return;
 
-            if (m_connector == null) m_connector = scene.RequestModuleInterface<IStarDustCurrencyService>();
             if (m_connector == null)
             {
-                m_log.Error("[StarDustCurrencyNew] IStarDustCurrencyService is null");
-                return;
+                m_connector = scene.RequestModuleInterface<IStarDustCurrencyService>() as DustCurrencyService;
+                m_enabled = ((m_connector != null) && (m_connector.Enabled));
+                if (!m_enabled) return;
+                
+                m_connector.SetRegionService(this);
             }
-
-            MainServer.Instance.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this, 0, scene));
+            
+            MainServer.Instance.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this));
 
             m_objectCapacity = scene.RegionInfo.ObjectCapacity;
-            scene.RegisterModuleInterface<IMoneyModule> (this);
-            scene.RegisterModuleInterface<StarDustCurrencyNew> (this);
+            scene.RegisterModuleInterface<IStardustRegionService>(this);
             m_scenes.Add(scene);
 
             scene.EventManager.OnNewClient += OnNewClient;
@@ -61,20 +64,20 @@ namespace StarDust.Currency.Region
             m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0} ", MainServer.Instance.ServerURI);
         }
 
-        public void RegionLoaded (IScene scene)
+        public void RegionLoaded(IScene scene)
         {
             if (m_connector == null) return;
             m_options = m_connector.GetConfig();
         }
 
-        public void RemoveRegion (IScene scene)
+        public void RemoveRegion(IScene scene)
         {
             // clean up on removing region
             scene.EventManager.OnNewClient -= OnNewClient;
             scene.EventManager.OnClosingClient -= OnClosingClient;
             scene.EventManager.OnValidateBuyLand -= ValidateLandBuy;
 
-            scene.UnregisterModuleInterface<IMoneyModule>(this);
+            scene.UnregisterModuleInterface<IStardustRegionService>(this);
 
             MainServer.Instance.RemoveStreamHandler("POST", "/StarDustRegion");
             m_scenes.Remove(scene);
@@ -82,70 +85,20 @@ namespace StarDust.Currency.Region
 
         public void Close()
         {
+            // anything else I should do here?
             m_scenes.Clear();
-        }
-
-        public string Name
-        {
-            get { return "StarDustCurrency"; }
-        }
-
-        public Type ReplaceableInterface
-        {
-            get { return typeof(IMoneyModule); }
         }
 
         public void PostInitialise()
         {
-            //throw new NotImplementedException();
-        }
-        #endregion
-
-        #region IStarDustCurrencyService calls
-
-        /// <summary>
-        /// Get information about the given users currency
-        /// </summary>
-        /// <param name="agentId"></param>
-        /// <returns></returns>
-        public override StarDustUserCurrency UserCurrencyInfo(UUID agentId)
-        {
-            return m_connector.UserCurrencyInfo(agentId);
-        }
-
-        /// <summary>
-        /// Update the currency for the given user (This does not update the user's balance!)
-        /// </summary>
-        /// <param name="agent"></param>
-        // ReSharper disable UnusedMember.Local
-        bool UserCurrencyUpdate(StarDustUserCurrency agent)
-        // ReSharper restore UnusedMember.Local
-        {
-            return m_connector.UserCurrencyUpdate(agent);
+            throw new NotImplementedException();
         }
 
         #endregion
 
-        #region region functions
-        /// <summary>
-        /// Locates a IClientAPI for the client specified
-        /// </summary>
-        /// <param name="agentId"></param>
-        /// <returns></returns>
-        protected override IClientAPI GetUserClient(UUID agentId)
-        {
-            return (from scene in m_scenes
-                    where scene.GetScenePresence(agentId) != null
-                    where !scene.GetScenePresence(agentId).IsChildAgent
-                    select scene.GetScenePresence(agentId).ControllingClient).FirstOrDefault();
-        }
+        #region Implementation of IStardustRegionService
 
-        protected override UserAccount GetUserAccount(UUID agentId)
-        {
-            return m_scenes[0].UserAccountService.GetUserAccount(UUID.Zero, agentId);
-        }
-
-        protected override ISceneChildEntity FindObject (UUID objectID, out IScene scene)
+        public ISceneChildEntity FindObject(UUID objectID, out IScene scene)
         {
             foreach (IScene s in m_scenes)
             {
@@ -159,13 +112,22 @@ namespace StarDust.Currency.Region
             return null;
         }
 
-        public override IScene FindScene (UUID agentId)
+        public IScene FindScene(UUID agentId)
         {
             return (from s in m_scenes
                     let presence = s.GetScenePresence(agentId)
                     where presence != null && !presence.IsChildAgent
                     select s).FirstOrDefault();
         }
+
+        public IClientAPI GetUserClient(UUID agentId)
+        {
+            return (from scene in m_scenes
+                    where scene.GetScenePresence(agentId) != null
+                    where !scene.GetScenePresence(agentId).IsChildAgent
+                    select scene.GetScenePresence(agentId).ControllingClient).FirstOrDefault();
+        }
+
         #endregion
 
         #region region client events
@@ -176,7 +138,7 @@ namespace StarDust.Currency.Region
             client.OnMoneyBalanceRequest += SendMoneyBalance;
             client.OnMoneyTransferRequest += ProcessMoneyTransferRequest2;
             client.OnParcelBuyPass += ClientOnParcelBuyPass;
-            client.SendMoneyBalance(UUID.Zero, true, new byte[0], Balance(client));
+            client.SendMoneyBalance(UUID.Zero, true, new byte[0],  (int) m_connector.UserCurrencyInfo(client.AgentId).Amount);
         }
 
         protected void OnClosingClient(IClientAPI client)
@@ -189,12 +151,12 @@ namespace StarDust.Currency.Region
 
         private void ProcessMoneyTransferRequest2(UUID fromID, UUID toID, int amount, int type, string description)
         {
-            UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
+            m_connector.UserCurrencyTransfer(toID, fromID, UUID.Zero, UUID.Zero, (uint)amount, description, (TransactionType)type, UUID.Random());
         }
 
         private bool ValidateLandBuy(EventManager.LandBuyArgs e)
         {
-            return Transfer(e.parcelOwnerID, e.agentId, e.parcelPrice, "Land Purchase", TransactionType.Purchase);
+            return m_connector.UserCurrencyTransfer(e.parcelOwnerID, e.agentId, UUID.Zero, UUID.Zero, (uint)e.parcelPrice, "Land Purchase", TransactionType.Purchase, UUID.Random());
         }
 
         private void EconomyDataRequestHandler(IClientAPI remoteClient)
@@ -216,7 +178,7 @@ namespace StarDust.Currency.Region
         private void SendMoneyBalance(IClientAPI client, UUID agentId, UUID sessionId, UUID transactionId)
         {
             if (client.AgentId == agentId && client.SessionId == sessionId)
-                client.SendMoneyBalance(transactionId, true, new byte[0], Balance(client));
+                client.SendMoneyBalance(transactionId, true, new byte[0], (int)m_connector.UserCurrencyInfo(client.AgentId).Amount);
             else
                 client.SendAlertMessage("Unable to send your money balance to you!");
         }
@@ -249,7 +211,7 @@ namespace StarDust.Currency.Region
                 m_log.Debug("[StarDustCurrency]: Base account: " + landParcel.LandData.OwnerID + " Agent ID: " + fromID +
                             " Price:" +
                             landParcel.LandData.PassPrice);
-                bool giveResult = UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
+                bool giveResult = m_connector.UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
                                                        (uint)landParcel.LandData.PassPrice, "Parcel Pass",
                                                        TransactionType.Purchase, UUID.Random());
                 if (giveResult)
@@ -273,25 +235,6 @@ namespace StarDust.Currency.Region
             }
         }
 
-        #endregion
-
-        #region IMoneyModule
-
-        public override int Balance(IClientAPI client)
-        {
-            return (int)UserCurrencyInfo(client.AgentId).Amount;
-        }
-
-        public override GroupBalance GetGroupBalance(UUID groupID)
-        {
-            return m_connector.GetGroupBalance(groupID);
-        }
-
-        #endregion
-
-        #region other
-
-
         /// <summary>
         /// All message for money actually go through this function. Which also update the balance
         /// </summary>
@@ -300,55 +243,31 @@ namespace StarDust.Currency.Region
         /// <param name="goDeep"></param>
         /// <param name="transactionId"></param>
         /// <returns></returns>
-        public override bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
+        public bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
         {
-            IScene agentSp = FindScene (toId);
+            IScene agentSp = FindScene(toId);
             if (agentSp == null)
-                return (goDeep) ? m_connector.SendGridMessage(toId, message, false, transactionId) : false;
-            else
+                return (goDeep) && m_connector.SendGridMessage(toId, message, false, transactionId);
+            IDialogModule dialogModule = agentSp.RequestModuleInterface<IDialogModule>();
+            if (dialogModule != null)
             {
-                IDialogModule dialogModule = agentSp.RequestModuleInterface<IDialogModule>();
-                if (dialogModule != null)
+                IClientAPI icapiTo = GetUserClient(toId);
+                if ((message.IndexOf("http") > -1) && (icapiTo != null))
                 {
-                    IClientAPI icapiTo = GetUserClient(toId);
-                    if ((message.IndexOf("http") > -1) && (icapiTo != null))
-                    {
-                        icapiTo.SendMoneyBalance(transactionId, true, new byte[0], Balance(icapiTo));
-                        dialogModule.SendUrlToUser(toId, "", UUID.Zero, UUID.Zero, false, message, message.Substring(message.IndexOf("http")));
-                        icapiTo.SendAlertMessage(message.Substring(message.IndexOf("http")));
-                    }
-                    else if (icapiTo != null)
-                        icapiTo.SendMoneyBalance(transactionId, true, Utils.StringToBytes(message), Balance(icapiTo));
-                    else
-                        dialogModule.SendAlertToUser(toId, message);
-
-                    return true;
+                    icapiTo.SendMoneyBalance(transactionId, true, new byte[0], (int)m_connector.UserCurrencyInfo(icapiTo.AgentId).Amount);
+                    dialogModule.SendUrlToUser(toId, "", UUID.Zero, UUID.Zero, false, message, message.Substring(message.IndexOf("http")));
+                    icapiTo.SendAlertMessage(message.Substring(message.IndexOf("http")));
                 }
+                else if (icapiTo != null)
+                    icapiTo.SendMoneyBalance(transactionId, true, Utils.StringToBytes(message),(int)m_connector.UserCurrencyInfo(icapiTo.AgentId).Amount);
                 else
-                    return (goDeep) ? m_connector.SendGridMessage(toId, message, false, transactionId) : false;
+                    dialogModule.SendAlertToUser(toId, message);
+
+                return true;
             }
+            return (goDeep) && m_connector.SendGridMessage(toId, message, false, transactionId);
         }
 
         #endregion
-
-        #region console commands
-
-        //private void GenerateKeys(string module, string[] cmd)
-        //{
-        //    StreamWriter writer = new StreamWriter("StarDustPrivateKey.xml");
-        //    string publicPrivateKeyXML = rsa.ToXmlString(true);
-        //    writer.Write(publicPrivateKeyXML);
-        //    writer.Close();
-
-
-        //    writer = new StreamWriter("StarDustPublicKey-" +  + ".xml");
-        //    string publicOnlyKeyXML = rsa.ToXmlString(false);
-        //    writer.Write(publicOnlyKeyXML);
-        //    writer.Close();
-        //}
-
-        #endregion
     }
-
-
 }

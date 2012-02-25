@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
@@ -8,9 +9,9 @@ using log4net;
 
 namespace StarDust.Currency.Interfaces
 {
-    public class StarDustConfig
+    public class StarDustConfig : IDataTransferable
     {
-        private static readonly ILog m_log =
+        private readonly ILog m_log =
                 LogManager.GetLogger (
                 MethodBase.GetCurrentMethod ().DeclaringType);
 
@@ -81,7 +82,7 @@ namespace StarDust.Currency.Interfaces
             FromOSD(values);
         }
 
-        public OSDMap ToOSD()
+        public override OSDMap ToOSD()
         {
             OSDMap returnvalue = new OSDMap();
             foreach (PropertyInfo propertyInfo in GetType().GetProperties())
@@ -107,7 +108,7 @@ namespace StarDust.Currency.Interfaces
             return returnvalue;
         }
 
-        public void FromOSD(OSDMap values)
+        public override sealed void FromOSD(OSDMap values)
         {
             foreach (PropertyInfo propertyInfo in GetType().GetProperties())
             {
