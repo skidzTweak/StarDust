@@ -25,8 +25,14 @@ namespace StarDust.Currency
         private DustRPCHandler m_rpc;
         private MoneyModule m_moneyModule = null;
         private DustRegionService m_dustRegionService = null;
+        private IScheduleService m_scheduler;
+
 
         #region Properties
+        public IScheduleService Scheduler
+        {
+            get { return m_scheduler; }
+        }
         public string Name
         {
             get { return GetType().Name; }
@@ -66,11 +72,37 @@ namespace StarDust.Currency
         public void Start(IConfigSource config, IRegistryCore registry)
         {
             m_database = DataManager.RequestPlugin<IStarDustCurrencyConnector>();
+            m_scheduler = registry.RequestModuleInterface<IScheduleService>();
         }
 
         public void FinishedStartup()
         {
+            if (!m_doRemoteCalls)
+            {
+                m_scheduler.Register("RestrictedCurrencyPurchaseRemove", RestrictedCurrencyPurchaseRemove_Event);
+                m_scheduler.Register("RestrictedCurrencySpendRemove", RestrictedCurrencySpendRemove_Event);
+            }
 
+        }
+
+        private object RestrictedCurrencySpendRemove_Event(string functionname, object parameters)
+        {
+            RestrictedCurrencyInfo pcri = new RestrictedCurrencyInfo();
+            pcri.FromOSD((OSDMap)OSDParser.DeserializeJson(parameters.ToString()));
+            StarDustUserCurrency starDustUserCurrency = UserCurrencyInfo(pcri.AgentID);
+            starDustUserCurrency.RestrictedAmount -= pcri.Amount;
+            m_database.UserCurrencyUpdate(starDustUserCurrency);
+            return true;
+        }
+
+        private object RestrictedCurrencyPurchaseRemove_Event(string functionName, object parameters)
+        {
+            RestrictedCurrencyInfo pcri = new RestrictedCurrencyInfo();
+            pcri.FromOSD((OSDMap)OSDParser.DeserializeJson(parameters.ToString()));
+            StarDustUserCurrency starDustUserCurrency = UserCurrencyInfo(pcri.AgentID);
+            starDustUserCurrency.RestrictPurchaseAmount -= pcri.Amount;
+            m_database.UserCurrencyUpdate(starDustUserCurrency);
+            return true;
         }
 
         #endregion
@@ -135,6 +167,11 @@ namespace StarDust.Currency
             return m_database.GetUserCurrency(agentId);
         }
 
+        /// <summary>
+        /// This will not update their currency, only other values
+        /// </summary>
+        /// <param name="agent"></param>
+        /// <returns></returns>
         [CanBeReflected(ThreatLevel = ThreatLevel.Low)]
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
@@ -530,7 +567,9 @@ namespace StarDust.Currency
             bool returnvalue = transaction.Complete == 1;
 
             if (returnvalue)
+            {
                 m_moneyModule.FireObjectPaid(toObjectID, fromID, int.Parse(amount.ToString()));
+            }
 
             #endregion
 
@@ -565,7 +604,10 @@ namespace StarDust.Currency
             }
             else
             {
-                SendGridMessage(transaction.FromID, "Transaction Failed", !isgridServer, transaction.TransactionID);
+                if (transaction.CompleteReason != "")
+                    SendGridMessage(transaction.FromID, "Transaction Failed - " + transaction.CompleteReason, !isgridServer, transaction.TransactionID);
+                else
+                    SendGridMessage(transaction.FromID, "Transaction Failed", !isgridServer, transaction.TransactionID);
             }
 
             if ((toObjectID != UUID.Zero) && (!isgridServer))
@@ -579,7 +621,61 @@ namespace StarDust.Currency
         }
         #endregion
 
+        public void RestrictCurrency(StarDustUserCurrency currency, Transaction transaction, UUID agentId)
+        {
+            if ((m_options.MaxAmountPurchaseDays > 0) && (m_options.MaxAmountPurchase > 0))
+            {
+                currency.RestrictPurchaseAmount += transaction.Amount;
+                Scheduler.Save(new SchedulerItem("RestrictedCurrencyPurchaseRemove",
+                                                 new RestrictedCurrencyInfo()
+                                                 {
+                                                     AgentID = agentId,
+                                                     Amount = transaction.Amount,
+                                                     FromTransactionID = transaction.TransactionID
+                                                 }.ToOSD(),
+                                                 true, DateTime.UtcNow,
+                                                 m_options.MaxAmountPurchaseDays,
+                                                 RepeatType.days)
+                {
+                    HisotryKeep = true,
+                    HistoryReciept = false,
+                    RunOnce = true
+                });
+                UserCurrencyUpdate(currency);
+            }
+            if ((m_options.RestrictMoneyHoursAfterPurchase > 0) && (m_options.RestrictMoneyCanSpendAfterPurchase > 0))
+            {
+                uint amount2Restrict = 0;
+                if (currency.RestrictedAmount == 0)
+                {
+                    if (transaction.Amount >= m_options.RestrictMoneyCanSpendAfterPurchase)
+                        amount2Restrict = transaction.Amount - (uint)m_options.RestrictMoneyCanSpendAfterPurchase;
+                    else //because its less than the amount we allow them to spend, we restricted it all.. why? because else they could buy over and over with no restrictions 
+                        amount2Restrict = transaction.Amount / 2;
+                }
+                else // if they already have money restricted we restrict everything
+                    amount2Restrict = transaction.Amount;
 
+                currency.RestrictedAmount += amount2Restrict;
+
+                Scheduler.Save(new SchedulerItem("RestrictedCurrencySpendRemove",
+                                                 new RestrictedCurrencyInfo()
+                                                 {
+                                                     AgentID = agentId,
+                                                     Amount = amount2Restrict,
+                                                     FromTransactionID = transaction.TransactionID
+                                                 }.ToOSD(),
+                                                 true, DateTime.UtcNow,
+                                                 m_options.RestrictMoneyHoursAfterPurchase,
+                                                 RepeatType.hours)
+                {
+                    HisotryKeep = true,
+                    HistoryReciept = false,
+                    RunOnce = true
+                });
+                UserCurrencyUpdate(currency);
+            }
+        }
     }
 
 

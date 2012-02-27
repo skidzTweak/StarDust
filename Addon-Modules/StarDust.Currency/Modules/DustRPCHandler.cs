@@ -19,6 +19,7 @@ namespace StarDust.Currency
     {
         private readonly DustCurrencyService m_dustCurrencyService;
         protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        
 
         public DustRPCHandler(DustCurrencyService mainService, IConfigSource source, IRegistryCore registry)
         {
@@ -53,28 +54,39 @@ namespace StarDust.Currency
             if (requestData.ContainsKey("agentId") && requestData.ContainsKey("currencyBuy"))
             {
                 uint amount = uint.Parse(requestData["currencyBuy"].ToString());
+                UUID theagent = new UUID(requestData["agentId"].ToString());
+                StarDustUserCurrency currency = m_dustCurrencyService.UserCurrencyInfo(theagent);
+                bool successful = !(m_dustCurrencyService.m_options.MaxAmountPurchase < currency.RestrictPurchaseAmount + amount);
+                if (!successful)
+                    m_dustCurrencyService.SendGridMessage(theagent, string.Format("Amount was over the limit. {0} is the max amount.", m_dustCurrencyService.m_options.MaxAmountPurchase - currency.RestrictPurchaseAmount), false, UUID.Zero);
                 returnval.Value = new Hashtable
-                                      {
-                                          {"success", true},
                                           {
-                                              "currency",
-                                              new Hashtable
-                                                  {
+                                              {"success", successful},
+                                              {
+                                                  "currency",
+                                                  new Hashtable
                                                       {
-                                                          "estimatedCost",
-                                                          Convert.ToInt32(
-                                                              Math.Round(((float.Parse(amount.ToString())/
-                                                                           m_dustCurrencyService.m_options.RealCurrencyConversionFactor) +
-                                                                          ((float.Parse(amount.ToString())/
-                                                                            m_dustCurrencyService.m_options.RealCurrencyConversionFactor)*
-                                                                           (m_dustCurrencyService.m_options.AdditionPercentage/10000.0)) +
-                                                                          (m_dustCurrencyService.m_options.AdditionAmount/100.0))*100))
-                                                          },
-                                                      {"currencyBuy", (int) amount}
-                                                  }
-                                              },
-                                          {"confirm", "asdfad9fj39ma9fj"}
-                                      };
+                                                          {
+                                                              "estimatedCost",
+                                                              Convert.ToInt32(
+                                                                  Math.Round(((float.Parse(amount.ToString())/
+                                                                               m_dustCurrencyService.m_options.
+                                                                                   RealCurrencyConversionFactor) +
+                                                                              ((float.Parse(amount.ToString())/
+                                                                                m_dustCurrencyService.m_options.
+                                                                                    RealCurrencyConversionFactor)*
+                                                                               (m_dustCurrencyService.m_options.
+                                                                                    AdditionPercentage/10000.0)) +
+                                                                              (m_dustCurrencyService.m_options.
+                                                                                   AdditionAmount/100.0))*100))
+                                                              },
+                                                          {"currencyBuy", (int) amount}
+                                                      }
+                                                  },
+                                              {"confirm", "asdfad9fj39ma9fj"}
+                                          };
+                
+
                 return returnval;
 
             }
@@ -96,6 +108,8 @@ namespace StarDust.Currency
                 UUID agentId;
                 if (UUID.TryParse((string)requestData["agentId"], out agentId))
                 {
+                    
+                    uint amountBuying = uint.Parse(requestData["currencyBuy"].ToString());
                     UserAccount ua = m_dustCurrencyService.Registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, agentId);
                     IClientCapsService client = m_dustCurrencyService.Registry.RequestModuleInterface<ICapsService>().GetClientCapsService(agentId);
                     if ((client != null) && (ua != null))
@@ -103,7 +117,8 @@ namespace StarDust.Currency
                         IRegionClientCapsService regionClient = client.GetRootCapsService();
                         UUID purchaseID = UUID.Random();
 
-                        success = m_dustCurrencyService.m_database.UserCurrencyBuy(purchaseID, agentId, ua.Name, uint.Parse(requestData["currencyBuy"].ToString()),
+                        
+                        success = m_dustCurrencyService.m_database.UserCurrencyBuy(purchaseID, agentId, ua.Name, amountBuying,
                                                              m_dustCurrencyService.m_options.RealCurrencyConversionFactor,
                                                              new RegionTransactionDetails
                                                                  {
@@ -111,16 +126,24 @@ namespace StarDust.Currency
                                                                  RegionName = regionClient.Region.RegionName
                                                              }
                                                              );
-
+                        StarDustUserCurrency currency = m_dustCurrencyService.UserCurrencyInfo(agentId);
                         if (m_dustCurrencyService.m_options.AutoApplyCurrency && success)
                         {
                             Transaction transaction;
                             m_dustCurrencyService.m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete",
-                                                               m_dustCurrencyService.m_options.AutoApplyCurrency.ToString(), "Auto Complete",
-                                                               out transaction);
-                            m_dustCurrencyService.UserCurrencyTransfer(transaction.ToID, m_dustCurrencyService.m_options.BankerPrincipalID, UUID.Zero, UUID.Zero,
-                                                 transaction.Amount, "Currency Purchase",
-                                                 TransactionType.SystemGenerated, transaction.TransactionID);
+                                                                                     m_dustCurrencyService.m_options
+                                                                                         .AutoApplyCurrency.ToString
+                                                                                         (), "Auto Complete",
+                                                                                     out transaction);
+
+                            m_dustCurrencyService.UserCurrencyTransfer(transaction.ToID,
+                                                                       m_dustCurrencyService.m_options.
+                                                                           BankerPrincipalID, UUID.Zero, UUID.Zero,
+                                                                       transaction.Amount, "Currency Purchase",
+                                                                       TransactionType.SystemGenerated,
+                                                                       transaction.TransactionID);
+                            m_dustCurrencyService.RestrictCurrency(currency, transaction, agentId);
+
                         }
                         else if (success && m_dustCurrencyService.m_options.AfterCurrencyPurchaseMessage != string.Empty)
                             m_dustCurrencyService.SendGridMessage(agentId, String.Format(m_dustCurrencyService.m_options.AfterCurrencyPurchaseMessage, purchaseID.ToString()), false, UUID.Zero);

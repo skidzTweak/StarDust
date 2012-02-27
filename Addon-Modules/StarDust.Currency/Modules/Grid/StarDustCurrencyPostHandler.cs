@@ -318,13 +318,6 @@ namespace StarDust.Currency.Grid
             return m_starDustCurrencyService.Database.CheckIfPurchaseComplete(payPalResponse);
         }
 
-        public GroupBalance GetGroupBalance(UUID groupID)
-        {
-            throw new NotImplementedException();
-        }
-
-
-
         public bool FinishPurchase(OSDMap payPalResponse, string rawResponse)
         {
             Transaction transaction;
@@ -337,6 +330,7 @@ namespace StarDust.Currency.Grid
                                                  transaction.Amount, "Currency Purchase",
                                                  TransactionType.SystemGenerated, transaction.TransactionID))
                     {
+                        m_starDustCurrencyService.RestrictCurrency(m_starDustCurrencyService.UserCurrencyInfo(transaction.ToID), transaction, transaction.ToID);
                         return true;
                     }
                 }

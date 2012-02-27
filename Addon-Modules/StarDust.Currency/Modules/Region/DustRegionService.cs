@@ -91,7 +91,7 @@ namespace StarDust.Currency.Region
 
         public void PostInitialise()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         #endregion

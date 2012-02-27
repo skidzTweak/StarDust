@@ -87,8 +87,16 @@ namespace StarDust.Currency.Grid
         public bool UserCurrencyUpdate(StarDustUserCurrency agent)
         {
             m_gd.Update("stardust_currency",
-                        new Dictionary<string, object> { { "LandInUse", agent.LandInUse }, { "Tier", agent.Tier } }, null,
-                        new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", agent.PrincipalID } } }
+                        new Dictionary<string, object>
+                            {
+                                {"LandInUse", agent.LandInUse}, 
+                                {"Tier", agent.Tier},
+                                {"IsGroup", agent.IsGroup},
+                                {"RestrictedAmount", agent.RestrictedAmount},
+                                {"RestrictPurchaseAmount", agent.RestrictPurchaseAmount}
+                            }, null,
+                        new QueryFilter()
+                            {andFilters = new Dictionary<string, object> {{"PrincipalID", agent.PrincipalID}}}
                         , null, null);
             return true;
         }
@@ -425,6 +433,18 @@ namespace StarDust.Currency.Grid
                 WriteHistory(transaction, out transaction);
                 trans = transaction;
                 return false;
+            }
+
+            if (transaction.FromID != m_options.BankerPrincipalID)
+            {
+                if ((fromBalance.RestrictedAmount > 0) && ((fromBalance.Amount - fromBalance.RestrictedAmount) < transaction.Amount))
+                {
+                    transaction.Complete = 0;
+                    transaction.CompleteReason = "Failed transaction. $" + fromBalance.RestrictedAmount + " of your currency is restricted for " + m_options.RestrictMoneyHoursAfterPurchase + " hours after purchase. You can spend " + (fromBalance.Amount - fromBalance.RestrictedAmount) + ". Sorry";
+                    WriteHistory(transaction, out transaction);
+                    trans = transaction;
+                    return false;
+                }
             }
 
             // update sender

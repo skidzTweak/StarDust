@@ -146,6 +146,9 @@ namespace StarDust.Currency.Interfaces
         public uint Amount;
         public uint LandInUse;
         public uint Tier;
+        public bool IsGroup;
+        public uint RestrictedAmount;
+        public uint RestrictPurchaseAmount;
 
         /// <summary>
         /// 
@@ -165,11 +168,13 @@ namespace StarDust.Currency.Interfaces
         /// <param name="osdMap"></param>
         public override sealed void FromOSD(OSDMap osdMap)
         {
-            if (UUID.TryParse(osdMap["PrincipalID"].AsString(), out PrincipalID) &&
-                uint.TryParse(osdMap["Amount"].AsString(), out Amount) &&
-                uint.TryParse(osdMap["LandInUse"].AsString(), out LandInUse) &&
-                uint.TryParse(osdMap["Tier"].AsString(), out Tier))
-                return;
+            UUID.TryParse(osdMap["PrincipalID"].AsString(), out PrincipalID);
+            uint.TryParse(osdMap["Amount"].AsString(), out Amount);
+            uint.TryParse(osdMap["LandInUse"].AsString(), out LandInUse);
+            uint.TryParse(osdMap["Tier"].AsString(), out Tier);
+            bool.TryParse(osdMap["IsGroup"].AsString(), out IsGroup);
+            uint.TryParse(osdMap["RestrictedAmount"].AsString(), out RestrictedAmount);
+            uint.TryParse(osdMap["RestrictPurchaseAmount"].AsString(), out RestrictPurchaseAmount);
         }
 
         public bool FromArray(List<string> queryResults)
@@ -177,7 +182,11 @@ namespace StarDust.Currency.Interfaces
             return UUID.TryParse(queryResults[0], out PrincipalID) &&
                    uint.TryParse(queryResults[1], out Amount) &&
                    uint.TryParse(queryResults[2], out LandInUse) &&
-                   uint.TryParse(queryResults[3], out Tier);
+                   uint.TryParse(queryResults[3], out Tier) &&
+                   bool.TryParse(queryResults[4], out IsGroup) &&
+                   uint.TryParse(queryResults[5], out RestrictedAmount) &&
+                   uint.TryParse(queryResults[6], out RestrictPurchaseAmount)
+                   ;
         }
 
 
@@ -193,7 +202,10 @@ namespace StarDust.Currency.Interfaces
                         {"PrincipalID", PrincipalID},
                         {"Amount", Amount},
                         {"LandInUse", LandInUse},
-                        {"Tier", Tier}
+                        {"Tier", Tier},
+                        {"IsGroup", IsGroup},
+                        {"RestrictedAmount", RestrictedAmount},
+                        {"RestrictPurchaseAmount", RestrictPurchaseAmount}
                     };
         }
 
@@ -209,7 +221,10 @@ namespace StarDust.Currency.Interfaces
                         {"PrincipalID", PrincipalID},
                         {"Amount", Amount},
                         {"LandInUse", LandInUse},
-                        {"Tier", Tier}
+                        {"Tier", Tier},
+                        {"IsGroup", IsGroup},
+                        {"RestrictedAmount", RestrictedAmount},
+                        {"RestrictPurchaseAmount", RestrictPurchaseAmount}
                     };
         }
     }
@@ -306,5 +321,29 @@ namespace StarDust.Currency.Interfaces
         OSDMap OrderSubscription(UUID toId, string toName, string regionName, string notes, string subscriptionID);
         bool CheckIfPurchaseComplete(OSDMap payPalResponse);
         GroupBalance GetGroupBalance(UUID groupID);
+    }
+
+    public class RestrictedCurrencyInfo: IDataTransferable
+    {
+        public UUID AgentID;
+        public uint Amount;
+        public UUID FromTransactionID;
+
+        public override OSDMap ToOSD()
+        {
+            return new OSDMap()
+            {
+                {"AgentID",AgentID},
+                {"Amount", Amount},
+                {"FromTransactionID", FromTransactionID}
+            };
+        }
+
+        public override void FromOSD(OSDMap map)
+        {
+            AgentID = map["AgentID"].AsUUID();
+            Amount = map["Amount"].AsUInteger();
+            FromTransactionID = map["FromTransactionID"].AsUUID();
+        }
     }
 }

@@ -49,6 +49,10 @@ namespace StarDust.Currency.Interfaces
         private int m_AdditionAmount = 30;
         private string m_payPalAuthToken = "";
         private string m_payPalUrl = "";
+        private int m_restrictMoneyHoursAfterPurchase = 0;
+        private int m_restrictMoneyCanSpendAfterPurchase = 0;
+        private int m_maxAmountPurchaseDays = 0;
+        private int m_maxAmountPurchase = 100000;
 
         #endregion
         #region functions
@@ -329,6 +333,29 @@ namespace StarDust.Currency.Interfaces
             set { m_payPalUrl = value; }
         }
 
+        public int RestrictMoneyHoursAfterPurchase
+        {
+            get { return m_restrictMoneyHoursAfterPurchase; }
+            set { m_restrictMoneyHoursAfterPurchase = value; }
+        }
+
+        public int RestrictMoneyCanSpendAfterPurchase
+        {
+            get { return m_restrictMoneyCanSpendAfterPurchase; }
+            set { m_restrictMoneyCanSpendAfterPurchase = value; }
+        }
+
+        public int MaxAmountPurchaseDays
+        {
+            get { return m_maxAmountPurchaseDays; }
+            set { m_maxAmountPurchaseDays = value; }
+        }
+
+        public int MaxAmountPurchase
+        {
+            get { return m_maxAmountPurchase; }
+            set { m_maxAmountPurchase = value; }
+        }
         #endregion
     }
 }
