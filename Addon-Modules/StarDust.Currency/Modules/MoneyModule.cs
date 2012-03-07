@@ -14,6 +14,14 @@ namespace StarDust.Currency
         private DustCurrencyService m_stardustservice;
         private StarDustConfig m_options;
 
+        public int ClientPort
+        {
+            get
+            {
+                return m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer((uint)source.Configs["Handlers"].GetInt("LLLoginHandlerPort", 0));
+            }
+        }
+
         #region Implementation of IService
 
         public void Initialize(IConfigSource config, IRegistryCore registry)
