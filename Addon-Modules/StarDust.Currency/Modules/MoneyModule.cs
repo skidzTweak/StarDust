@@ -13,12 +13,13 @@ namespace StarDust.Currency
         private IRegistryCore m_registry;
         private DustCurrencyService m_stardustservice;
         private StarDustConfig m_options;
+        private int m_clientport;
 
         public int ClientPort
         {
             get
             {
-                return m_registry.RequestModuleInterface<ISimulationBase>().GetHttpServer((uint)source.Configs["Handlers"].GetInt("LLLoginHandlerPort", 0));
+                return m_clientport;
             }
         }
 
@@ -32,6 +33,7 @@ namespace StarDust.Currency
         public void Start(IConfigSource config, IRegistryCore registry)
         {
             m_registry = registry;
+            m_clientport = config.Configs["Handlers"].GetInt("LLLoginHandlerPort", 0);
             m_stardustservice = m_registry.RequestModuleInterface<IStarDustCurrencyService>() as DustCurrencyService;
             if (m_stardustservice == null) return;
             m_enabled = true;
