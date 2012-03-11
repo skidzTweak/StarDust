@@ -448,7 +448,7 @@ namespace StarDust.Currency
                     if (icapiFrom != null)
                         fromName = icapiFrom.Name;
                 }
-                else
+                if (fromName == "")
                 {
                     UserAccount ua = GetUserAccount(fromID);
                     if (ua != null)
