@@ -141,6 +141,9 @@ namespace StarDust.Currency.Interfaces
 
         #endregion
         #region properties
+
+        public bool DisplayPayMessages { get; set; }
+
         public string ErrorURI
         {
             get { return m_errorURI; }

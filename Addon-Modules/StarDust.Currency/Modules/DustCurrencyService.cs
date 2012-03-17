@@ -339,8 +339,6 @@ namespace StarDust.Currency
 
         #endregion
 
-
-
         #region Money
         /// <summary>
         /// This is the function that everythign really happens Grid and Region Side
@@ -589,17 +587,16 @@ namespace StarDust.Currency
                         SendGridMessage(transaction.FromID,
                                         "You Paid $" + transaction.Amount + " to " + transaction.ToName, !isgridServer, transaction.TransactionID);
                     }
-
                     SendGridMessage(transaction.ToID,
                                         "You Were Paid $" + transaction.Amount + " by " + transaction.FromName, !isgridServer, transaction.TransactionID);
                 }
                 else if (transaction.TypeOfTrans == TransactionType.Upload)
                 {
-                    SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
+                        SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
                 }
                 else
                 {
-                    SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount, !isgridServer, transaction.TransactionID);
+                        SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount, !isgridServer, transaction.TransactionID);
                 }
             }
             else

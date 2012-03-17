@@ -245,6 +245,7 @@ namespace StarDust.Currency.Region
         /// <returns></returns>
         public bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
         {
+            if (!m_options.DisplayPayMessages) message = "";
             IScene agentSp = FindScene(toId);
             if (agentSp == null)
                 return (goDeep) && m_connector.SendGridMessage(toId, message, false, transactionId);
