@@ -54,7 +54,7 @@ namespace StarDust.Currency
 
         public bool ObjectGiveMoney(UUID fromObjectID, UUID fromID, UUID toID, int amount)
         {
-            return m_stardustservice.UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPay, UUID.Random());
+            return m_stardustservice.UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPaysAvatar, UUID.Random());
         }
 
         public bool Charge(IClientAPI from, int amount)

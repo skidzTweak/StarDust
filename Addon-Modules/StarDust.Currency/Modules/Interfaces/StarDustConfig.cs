@@ -53,6 +53,8 @@ namespace StarDust.Currency.Interfaces
         private int m_restrictMoneyCanSpendAfterPurchase = 0;
         private int m_maxAmountPurchaseDays = 0;
         private int m_maxAmountPurchase = 100000;
+		
+		private bool m_DisplayPayMessages = true;
 
         #endregion
         #region functions
@@ -142,7 +144,10 @@ namespace StarDust.Currency.Interfaces
         #endregion
         #region properties
 
-        public bool DisplayPayMessages { get; set; }
+        public bool DisplayPayMessages { 
+			get{return m_DisplayPayMessages;}
+			set{m_DisplayPayMessages = value;}	
+		}
 
         public string ErrorURI
         {

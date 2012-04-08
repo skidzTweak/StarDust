@@ -590,7 +590,7 @@ namespace StarDust.Currency
                     SendGridMessage(transaction.ToID,
                                         "You Were Paid $" + transaction.Amount + " by " + transaction.FromName, !isgridServer, transaction.TransactionID);
                 }
-                else if (transaction.TypeOfTrans == TransactionType.Upload)
+                else if (transaction.TypeOfTrans == TransactionType.UploadFee)
                 {
                         SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
                 }

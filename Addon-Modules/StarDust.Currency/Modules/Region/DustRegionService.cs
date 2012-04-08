@@ -156,7 +156,7 @@ namespace StarDust.Currency.Region
 
         private bool ValidateLandBuy(EventManager.LandBuyArgs e)
         {
-            return m_connector.UserCurrencyTransfer(e.parcelOwnerID, e.agentId, UUID.Zero, UUID.Zero, (uint)e.parcelPrice, "Land Purchase", TransactionType.Purchase, UUID.Random());
+            return m_connector.UserCurrencyTransfer(e.parcelOwnerID, e.agentId, UUID.Zero, UUID.Zero, (uint)e.parcelPrice, "Land Purchase", TransactionType.LandSale, UUID.Random());
         }
 
         private void EconomyDataRequestHandler(IClientAPI remoteClient)
@@ -213,7 +213,7 @@ namespace StarDust.Currency.Region
                             landParcel.LandData.PassPrice);
                 bool giveResult = m_connector.UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
                                                        (uint)landParcel.LandData.PassPrice, "Parcel Pass",
-                                                       TransactionType.Purchase, UUID.Random());
+                                                       TransactionType.LandPassFee, UUID.Random());
                 if (giveResult)
                 {
                     ParcelManager.ParcelAccessEntry entry
