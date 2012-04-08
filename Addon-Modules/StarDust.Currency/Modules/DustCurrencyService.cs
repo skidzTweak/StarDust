@@ -135,7 +135,22 @@ namespace StarDust.Currency
             m_log.Warn("====================================================================");
             m_log.Warn("====================== STARDUST CURRENCY 2012 ======================");
             m_log.Warn("====================================================================");
+            m_log.Warn("Stardust TOS/License Agreement - READ ME <<<<<<<<<<<<<<<<<<<<<<<<<<<");
+            m_log.Warn("====================================================================");
+            m_log.Warn("* Do NOT use this module in a production environment. ");
+            m_log.Warn("* This module is for educational purposes only, and should NOT be");
+            m_log.Warn("  used in a production environment!");
+            m_log.Warn("* By using this module you agree that Skidz Tweak, Aurora-Sim, or");
+            m_log.Warn("  other contributing developers are in no way responsible for any");
+            m_log.Warn("  damages that may occur as a result of using this module.");
+            m_log.Warn("* By using this module you agree that you understand the risks of");
+            m_log.Warn("  running this module and are fully willing to accept those risks");
+            m_log.Warn("  and any consequences that may occur.");
+            m_log.Warn("* By downing and using this module you are agreeing to everything");
+            m_log.Warn("  listed above. If you do not agree, do not use it.");
+            m_log.Warn("====================================================================");
             m_log.Warn("[StarDustStartup]: Version: " + Version + "\n");
+            m_log.Warn("====================================================================");
         }
 
         protected bool CheckEnabled(IConfigSource source)
