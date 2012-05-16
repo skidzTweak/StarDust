@@ -639,12 +639,12 @@ namespace StarDust.Currency
             {
                 currency.RestrictPurchaseAmount += transaction.Amount;
                 Scheduler.Save(new SchedulerItem("RestrictedCurrencyPurchaseRemove",
-                                                 new RestrictedCurrencyInfo()
+                                                 OSDParser.SerializeJsonString(new RestrictedCurrencyInfo()
                                                  {
                                                      AgentID = agentId,
                                                      Amount = transaction.Amount,
                                                      FromTransactionID = transaction.TransactionID
-                                                 }.ToOSD(),
+                                                 }.ToOSD()),
                                                  true, DateTime.UtcNow,
                                                  m_options.MaxAmountPurchaseDays,
                                                  RepeatType.days)
@@ -671,12 +671,12 @@ namespace StarDust.Currency
                 currency.RestrictedAmount += amount2Restrict;
 
                 Scheduler.Save(new SchedulerItem("RestrictedCurrencySpendRemove",
-                                                 new RestrictedCurrencyInfo()
+                                                 OSDParser.SerializeJsonString(new RestrictedCurrencyInfo()
                                                  {
                                                      AgentID = agentId,
                                                      Amount = amount2Restrict,
                                                      FromTransactionID = transaction.TransactionID
-                                                 }.ToOSD(),
+                                                 }.ToOSD()),
                                                  true, DateTime.UtcNow,
                                                  m_options.RestrictMoneyHoursAfterPurchase,
                                                  RepeatType.hours)
