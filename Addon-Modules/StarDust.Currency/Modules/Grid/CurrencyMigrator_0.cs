@@ -13,7 +13,7 @@ namespace StarDust.Currency.Grid
             Version = new Version(0, 0, 0);
             MigrationName = "Currency";
 
-            schema = new List<Rec<string, ColumnDefinition[], IndexDefinition[]>>();
+            schema = new List<SchemaDefinition>();
 
             AddSchema("stardust_currency", ColDefs(
                 ColDef("PrincipalID", ColumnTypes.String50),
