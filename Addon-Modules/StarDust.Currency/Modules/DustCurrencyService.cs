@@ -659,7 +659,7 @@ namespace StarDust.Currency
                                                  RepeatType.days, agentId)
                 {
                     HisotryKeep = true,
-                    Historyreciept = false,
+                    HistoryReciept = false,
                     RunOnce = true
                 });
                 UserCurrencyUpdate(currency);
@@ -691,7 +691,7 @@ namespace StarDust.Currency
                                                  RepeatType.hours, agentId)
                 {
                     HisotryKeep = true,
-                    Historyreciept = false,
+                    HistoryReciept = false,
                     RunOnce = true
                 });
                 UserCurrencyUpdate(currency);
