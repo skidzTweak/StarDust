@@ -58,7 +58,7 @@ namespace StarDust.Currency.Grid
                                                 OSDParser.SerializeJsonString(
                                                     new StipendsInfo() { AgentID = user.PrincipalID }.ToOSD()),
                                                 false, UnixTimeStampToDateTime(user.Created), runevery,
-                                                runevertype, user.PrincipalID) { HisotryKeep = true, Historyreciept = true });
+                                                runevertype, user.PrincipalID) { HisotryKeep = true, HistoryReciept = true });
             return null;
 
         }
@@ -114,7 +114,7 @@ namespace StarDust.Currency.Grid
                                                    OSDParser.SerializeJsonString(
                                                        new StipendsInfo() {AgentID = user.PrincipalID}.ToOSD()),
                                                    false, UnixTimeStampToDateTime(user.Created), runevery,
-                                                   runevertype, user.PrincipalID){HisotryKeep = true, Historyreciept = true });
+                                                   runevertype, user.PrincipalID){HisotryKeep = true, HistoryReciept = true });
             }
         }
 
