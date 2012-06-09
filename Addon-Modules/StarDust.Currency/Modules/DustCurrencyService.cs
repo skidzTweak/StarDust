@@ -26,7 +26,7 @@ namespace StarDust.Currency
         private MoneyModule m_moneyModule = null;
         private DustRegionService m_dustRegionService = null;
         private IScheduleService m_scheduler;
-
+        private GiveStipends m_stupends;
 
         #region Properties
         public IScheduleService Scheduler
@@ -120,13 +120,22 @@ namespace StarDust.Currency
                 IConfig handlerConfig = source.Configs["Handlers"];
                 string password = handlerConfig.GetString("WireduxHandlerPassword",
                                                           handlerConfig.GetString("WebUIHandlerPassword", string.Empty));
+
                 if (password == "") return;
+                
                 IHttpServer httpServer =
                     registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
                         handlerConfig.GetUInt("WireduxHandlerPort", handlerConfig.GetUInt("WebUIHTTPPort", 8002)));
                 if (httpServer == null) throw new ArgumentNullException("httpServer");
+
                 httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry,
                                                                                  password, m_options));
+                httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StardustATM_" + m_options.ATMGridURL, this, m_registry,
+                                                                                 password, m_options));
+                if ((m_options.GiveStipends) && (m_options.Stipend > 0))
+                {
+                    m_stupends = new GiveStipends(m_options, m_registry, this);
+                }
             }
         }
 
@@ -607,11 +616,11 @@ namespace StarDust.Currency
                 }
                 else if (transaction.TypeOfTrans == TransactionType.UploadFee)
                 {
-                        SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
+                    SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
                 }
                 else
                 {
-                        SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount, !isgridServer, transaction.TransactionID);
+                    SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount, !isgridServer, transaction.TransactionID);
                 }
             }
             else
@@ -647,10 +656,10 @@ namespace StarDust.Currency
                                                  }.ToOSD()),
                                                  true, DateTime.UtcNow,
                                                  m_options.MaxAmountPurchaseDays,
-                                                 RepeatType.days)
+                                                 RepeatType.days, agentId)
                 {
                     HisotryKeep = true,
-                    HistoryReciept = false,
+                    Historyreciept = false,
                     RunOnce = true
                 });
                 UserCurrencyUpdate(currency);
@@ -679,10 +688,10 @@ namespace StarDust.Currency
                                                  }.ToOSD()),
                                                  true, DateTime.UtcNow,
                                                  m_options.RestrictMoneyHoursAfterPurchase,
-                                                 RepeatType.hours)
+                                                 RepeatType.hours, agentId)
                 {
                     HisotryKeep = true,
-                    HistoryReciept = false,
+                    Historyreciept = false,
                     RunOnce = true
                 });
                 UserCurrencyUpdate(currency);

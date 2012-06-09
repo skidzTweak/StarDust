@@ -149,6 +149,7 @@ namespace StarDust.Currency.Interfaces
         public bool IsGroup;
         public uint RestrictedAmount;
         public uint RestrictPurchaseAmount;
+        public uint StipendsBalance;
 
         /// <summary>
         /// 
@@ -175,6 +176,7 @@ namespace StarDust.Currency.Interfaces
             bool.TryParse(osdMap["IsGroup"].AsString(), out IsGroup);
             uint.TryParse(osdMap["RestrictedAmount"].AsString(), out RestrictedAmount);
             uint.TryParse(osdMap["RestrictPurchaseAmount"].AsString(), out RestrictPurchaseAmount);
+            uint.TryParse(osdMap["StipendsBalance"].AsString(), out StipendsBalance);
         }
 
         public bool FromArray(List<string> queryResults)
@@ -185,7 +187,8 @@ namespace StarDust.Currency.Interfaces
                    uint.TryParse(queryResults[3], out Tier) &&
                    bool.TryParse(queryResults[4], out IsGroup) &&
                    uint.TryParse(queryResults[5], out RestrictedAmount) &&
-                   uint.TryParse(queryResults[6], out RestrictPurchaseAmount)
+                   uint.TryParse(queryResults[6], out RestrictPurchaseAmount) &&
+                   uint.TryParse(queryResults[7], out StipendsBalance)
                    ;
         }
 
@@ -205,7 +208,8 @@ namespace StarDust.Currency.Interfaces
                         {"Tier", Tier},
                         {"IsGroup", IsGroup},
                         {"RestrictedAmount", RestrictedAmount},
-                        {"RestrictPurchaseAmount", RestrictPurchaseAmount}
+                        {"RestrictPurchaseAmount", RestrictPurchaseAmount},
+                        {"StipendsBalance", StipendsBalance}
                     };
         }
 
@@ -224,7 +228,8 @@ namespace StarDust.Currency.Interfaces
                         {"Tier", Tier},
                         {"IsGroup", IsGroup},
                         {"RestrictedAmount", RestrictedAmount},
-                        {"RestrictPurchaseAmount", RestrictPurchaseAmount}
+                        {"RestrictPurchaseAmount", RestrictPurchaseAmount},
+                        {"StipendsBalance", StipendsBalance}
                     };
         }
     }

@@ -449,16 +449,37 @@ namespace StarDust.Currency.Grid
 
             // update sender
             m_gd.Update("stardust_currency",
-                        new Dictionary<string, object> { { "Amount", fromBalance.Amount - transaction.Amount } }, null,
-                        new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", transaction.FromID } } }, null,
+                        (fromBalance.Amount - transaction.Amount) >= fromBalance.StipendsBalance
+                            ? new Dictionary<string, object> {{"Amount", fromBalance.Amount - transaction.Amount}}
+                            : new Dictionary<string, object>
+                                  {
+                                      {"Amount", fromBalance.Amount - transaction.Amount},
+                                      {
+                                          "StipendsBalance",
+                                          fromBalance.StipendsBalance -
+                                          (fromBalance.StipendsBalance - (fromBalance.Amount - transaction.Amount))
+                                          }
+                                  }, null,
+                        new QueryFilter()
+                            {andFilters = new Dictionary<string, object> {{"PrincipalID", transaction.FromID}}}, null,
                         null);
 
             StarDustUserCurrency toBalance = GetUserCurrency(new UUID(transaction.ToID));
-            m_gd.Update("stardust_currency",
-                        new Dictionary<string, object> { { "Amount", toBalance.Amount + transaction.Amount } }, null,
+            if (transaction.TypeOfTrans == TransactionType.StipendPayment)
+            {
+                m_gd.Update("stardust_currency",
+                        new Dictionary<string, object> { { "Amount", toBalance.Amount + transaction.Amount }, { "StipendsBalance", toBalance.StipendsBalance + transaction.Amount } }, null,
                         new QueryFilter() { andFilters = new Dictionary<string, object> { { "PrincipalID", transaction.ToID } } }, null,
                         null);
-
+            }
+            else
+            {
+                m_gd.Update("stardust_currency",
+                            new Dictionary<string, object> {{"Amount", toBalance.Amount + transaction.Amount}}, null,
+                            new QueryFilter()
+                                {andFilters = new Dictionary<string, object> {{"PrincipalID", transaction.ToID}}}, null,
+                            null);
+            }
 
             // update logs
             transaction.Complete = 1;

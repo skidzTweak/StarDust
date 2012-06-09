@@ -31,6 +31,7 @@ namespace StarDust.Currency.Interfaces
         private int m_priceParcelRent = 1;
         private uint m_priceGroupCreate = 0;
         private UUID m_bankerPrincipalID = new UUID("11111111-1111-0000-0000-000100bba000");
+        private UUID m_exporterPrincipalID = new UUID("11111111-1111-0000-0000-000100bba000");
         private int m_realCurrencyConversionFactor = 1;
         private int m_stipend = 0;
         private int m_minFundsBeforeRefresh = 5;
@@ -55,6 +56,17 @@ namespace StarDust.Currency.Interfaces
         private int m_maxAmountPurchase = 100000;
 		
 		private bool m_DisplayPayMessages = true;
+        private string m_ATMPasswords = "";
+        private bool m_GiveStipends = false;
+        private string m_stipendsEveryType = "month";
+        private bool m_AllowExportOfStipends = true;
+        private string m_ATMIPBan = "";
+        private string m_ATMIPAllow = "";
+        private string m_ATMGridURL = "";
+        private bool m_stipendsPremiumOnly = false;
+        private int m_StipendsEvery = 1;
+        private bool m_GiveStipendsOnlyWhenLoggedIn = false;
+        private bool m_StipendsLoadOldUsers = false;
 
         #endregion
         #region functions
@@ -215,6 +227,42 @@ namespace StarDust.Currency.Interfaces
             set { m_stipend = value; }
         }
 
+        public bool GiveStipends
+        {
+            get { return m_GiveStipends; }
+            set { m_GiveStipends = value; }
+        }
+
+        public string StipendsEveryType
+        {
+            get { return m_stipendsEveryType; }
+            set { m_stipendsEveryType = value; }
+        }
+
+        public int StipendsEvery
+        {
+            get { return m_StipendsEvery; }
+            set { m_StipendsEvery = value; }
+        }
+
+        public bool StipendsLoadOldUsers
+        {
+            get { return m_StipendsLoadOldUsers; }
+            set { m_StipendsLoadOldUsers = value; }
+        }
+
+        public bool AllowExportOfStipends
+        {
+            get { return m_AllowExportOfStipends; }
+            set { m_AllowExportOfStipends = value; }
+        }
+
+        public bool GiveStipendsOnlyWhenLoggedIn
+        {
+            get { return m_GiveStipendsOnlyWhenLoggedIn; }
+            set { m_GiveStipendsOnlyWhenLoggedIn = value; }
+        }
+
         public int RealCurrencyConversionFactor
         {
             get { return m_realCurrencyConversionFactor; }
@@ -225,6 +273,36 @@ namespace StarDust.Currency.Interfaces
         {
             get { return m_bankerPrincipalID; }
             set { m_bankerPrincipalID = value; }
+        }
+
+        public UUID ExporterPrincipalID
+        {
+            get { return m_exporterPrincipalID; }
+            set { m_exporterPrincipalID = value; }
+        }
+
+        public string ATMPassword
+        {
+            get { return m_ATMPasswords; }
+            set { m_ATMPasswords = value;}
+        }
+
+        public string ATMIPBan
+        {
+            get { return m_ATMIPBan; }
+            set { m_ATMIPBan = value; }
+        }
+
+        public string ATMIPAllow
+        {
+            get { return m_ATMIPAllow; }
+            set { m_ATMIPAllow = value; }
+        }
+
+        public string ATMGridURL
+        {
+            get { return m_ATMGridURL; }
+            set { m_ATMGridURL = value; }
         }
 
         public int PriceGroupCreate
@@ -364,6 +442,17 @@ namespace StarDust.Currency.Interfaces
             get { return m_maxAmountPurchase; }
             set { m_maxAmountPurchase = value; }
         }
+
+        public bool StipendsPremiumOnly
+        {
+            get {
+                return m_stipendsPremiumOnly;
+            }
+            set {
+                m_stipendsPremiumOnly = value;
+            }
+        }
+
         #endregion
     }
 }
