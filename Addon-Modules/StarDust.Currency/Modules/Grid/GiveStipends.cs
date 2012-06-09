@@ -103,7 +103,7 @@ namespace StarDust.Currency.Grid
             taskTimer.Enabled = false;
             IUserAccountService userService = m_registry.RequestModuleInterface<IUserAccountService>();
             List<UserAccount> users = new List<UserAccount>();
-            users = userService.GetUserAccounts(UUID.Zero, 0, m_options.StipendsPremiumOnly ? 0 : 600);
+            users = userService.GetUserAccounts(UUID.Zero, 0, m_options.StipendsPremiumOnly ? 600 : 0);
             foreach (UserAccount user in users)
             {
                 SchedulerItem i = m_scheduler.Get(user.PrincipalID.ToString(), "StipendsPayout");
