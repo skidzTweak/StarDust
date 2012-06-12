@@ -15,13 +15,20 @@ using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency
 {
+    public enum PurchaseType
+    {
+        InWorldPurchaseOfCurrency = 1,
+        WebsiteRegionPurchase = 2,
+        ATMTransferFromAnotherGrid = 3
+    }
+
     public class DustCurrencyService : ConnectorBase, IStarDustCurrencyService, IService
     {
         public IStarDustCurrencyConnector m_database;
         public StarDustConfig m_options = null;
         protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         protected bool m_enabled;
-        protected const string Version = "0.1";
+        protected const string Version = "0.19";
         private DustRPCHandler m_rpc;
         private MoneyModule m_moneyModule = null;
         private DustRegionService m_dustRegionService = null;
@@ -121,17 +128,20 @@ namespace StarDust.Currency
                 string password = handlerConfig.GetString("WireduxHandlerPassword",
                                                           handlerConfig.GetString("WebUIHandlerPassword", string.Empty));
 
-                if (password == "") return;
-                
-                IHttpServer httpServer =
-                    registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
+                IHttpServer httpServer = null;
+                if (password == "")
+                httpServer = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
                         handlerConfig.GetUInt("WireduxHandlerPort", handlerConfig.GetUInt("WebUIHTTPPort", 8002)));
+                
                 if (httpServer == null) throw new ArgumentNullException("httpServer");
+                m_log.ErrorFormat("[]");
 
                 httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry,
                                                                                  password, m_options));
-                httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StardustATM_" + m_options.ATMGridURL, this, m_registry,
-                                                                                 password, m_options));
+
+                if ((m_options.ATMGridURL != "") && (m_options.ATMPassword != ""))
+                    httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerATM("/StardustATM_" + m_options.ATMGridURL, this, m_registry, m_options));
+
                 if ((m_options.GiveStipends) && (m_options.Stipend > 0))
                 {
                     m_stupends = new GiveStipends(m_options, m_registry, this);
@@ -147,18 +157,19 @@ namespace StarDust.Currency
             m_log.Warn("Stardust TOS/License Agreement - READ ME <<<<<<<<<<<<<<<<<<<<<<<<<<<");
             m_log.Warn("====================================================================");
             m_log.Warn("* Do NOT use this module in a production environment. ");
-            m_log.Warn("* This module is for educational purposes only, and should NOT be");
-            m_log.Warn("  used in a production environment!");
+            m_log.Warn("* Do NOT use this module with real money. ");
+            m_log.Warn("* This module is for educational purposes only, and can NOT be");
+            m_log.Warn("  used with real money or in a production enviroment!");
             m_log.Warn("* By using this module you agree that Skidz Tweak, Aurora-Sim, or");
-            m_log.Warn("  other contributing developers are in no way responsible for any");
+            m_log.Warn("  other contributing developers ARE IN NO WAY responsible for any");
             m_log.Warn("  damages that may occur as a result of using this module.");
             m_log.Warn("* By using this module you agree that you understand the risks of");
             m_log.Warn("  running this module and are fully willing to accept those risks");
             m_log.Warn("  and any consequences that may occur.");
             m_log.Warn("* By downing and using this module you are agreeing to everything");
-            m_log.Warn("  listed above. If you do not agree, do not use it.");
+            m_log.Warn("  listed above. If you do not agree, stop useing it.");
             m_log.Warn("====================================================================");
-            m_log.Warn("[StarDustStartup]: Version: " + Version + "\n");
+            m_log.Warn("[StarDustStartup]: Version: " + Version + " Beta\n");
             m_log.Warn("====================================================================");
         }
 
@@ -365,7 +376,7 @@ namespace StarDust.Currency
 
         #region Money
         /// <summary>
-        /// This is the function that everythign really happens Grid and Region Side
+        /// This is the function that everythign really happens Grid and Region Side. We build the transaction here.
         /// </summary>
         /// <param name="toID"></param>
         /// <param name="fromID"></param>
@@ -640,6 +651,76 @@ namespace StarDust.Currency
 
             return returnvalue;
         }
+        #endregion
+
+        #region Purchase
+
+        public UUID StartPurchaseOrATMTransfer(UUID agentId, uint amountBuying, PurchaseType purchaseType, string gridName)
+        {
+            bool success = false;
+            UserAccount ua = Registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, agentId);
+            if (ua == null) return UUID.Zero;
+            string agentName = ua.Name;
+
+            UUID RegionID = UUID.Zero;
+            string RegionName = "";
+            if (purchaseType == PurchaseType.InWorldPurchaseOfCurrency)
+            {
+                IClientCapsService client = Registry.RequestModuleInterface<ICapsService>().GetClientCapsService(agentId);
+                if (client != null)
+                {
+                    IRegionClientCapsService regionClient = client.GetRootCapsService();
+                    RegionID = regionClient.Region.RegionID;
+                    RegionName = regionClient.Region.RegionName;
+                }
+            }
+            else if (purchaseType == PurchaseType.ATMTransferFromAnotherGrid)
+            {
+                RegionName = "Grid:" + gridName;
+            }
+            else
+            {
+                RegionName = "Unknown";
+            }
+
+
+            UUID purchaseID = UUID.Random();
+            success = m_database.UserCurrencyBuy(purchaseID, agentId, agentName, amountBuying, m_options.RealCurrencyConversionFactor,
+                new RegionTransactionDetails
+                    {
+                        RegionID = RegionID,
+                        RegionName = RegionName
+                    }, (int)purchaseType);
+            StarDustUserCurrency currency = UserCurrencyInfo(agentId);
+
+
+
+            if (m_options.AutoApplyCurrency && success)
+            {
+                Transaction transaction;
+                m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete",
+                                                   m_options
+                                                       .AutoApplyCurrency.ToString
+                                                       (), "Auto Complete",
+                                                   out transaction);
+
+                UserCurrencyTransfer(transaction.ToID,
+                                     m_options.
+                                         BankerPrincipalID, UUID.Zero, UUID.Zero,
+                                     transaction.Amount, "Currency Purchase",
+                                     TransactionType.SystemGenerated,
+                                     transaction.TransactionID);
+                RestrictCurrency(currency, transaction, agentId);
+
+            }
+            else if (success && (m_options.AfterCurrencyPurchaseMessage != string.Empty) && (purchaseType == PurchaseType.InWorldPurchaseOfCurrency))
+                SendGridMessage(agentId,String.Format(m_options.AfterCurrencyPurchaseMessage,purchaseID.ToString()), false, UUID.Zero);
+
+            if (success)
+                return purchaseID;
+            return UUID.Zero;
+        }
+
         #endregion
 
         public void RestrictCurrency(StarDustUserCurrency currency, Transaction transaction, UUID agentId)

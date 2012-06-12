@@ -110,44 +110,7 @@ namespace StarDust.Currency
                 {
                     
                     uint amountBuying = uint.Parse(requestData["currencyBuy"].ToString());
-                    UserAccount ua = m_dustCurrencyService.Registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, agentId);
-                    IClientCapsService client = m_dustCurrencyService.Registry.RequestModuleInterface<ICapsService>().GetClientCapsService(agentId);
-                    if ((client != null) && (ua != null))
-                    {
-                        IRegionClientCapsService regionClient = client.GetRootCapsService();
-                        UUID purchaseID = UUID.Random();
-
-                        
-                        success = m_dustCurrencyService.m_database.UserCurrencyBuy(purchaseID, agentId, ua.Name, amountBuying,
-                                                             m_dustCurrencyService.m_options.RealCurrencyConversionFactor,
-                                                             new RegionTransactionDetails
-                                                                 {
-                                                                 RegionID = regionClient.Region.RegionID,
-                                                                 RegionName = regionClient.Region.RegionName
-                                                             }
-                                                             );
-                        StarDustUserCurrency currency = m_dustCurrencyService.UserCurrencyInfo(agentId);
-                        if (m_dustCurrencyService.m_options.AutoApplyCurrency && success)
-                        {
-                            Transaction transaction;
-                            m_dustCurrencyService.m_database.UserCurrencyBuyComplete(purchaseID, 1, "AutoComplete",
-                                                                                     m_dustCurrencyService.m_options
-                                                                                         .AutoApplyCurrency.ToString
-                                                                                         (), "Auto Complete",
-                                                                                     out transaction);
-
-                            m_dustCurrencyService.UserCurrencyTransfer(transaction.ToID,
-                                                                       m_dustCurrencyService.m_options.
-                                                                           BankerPrincipalID, UUID.Zero, UUID.Zero,
-                                                                       transaction.Amount, "Currency Purchase",
-                                                                       TransactionType.SystemGenerated,
-                                                                       transaction.TransactionID);
-                            m_dustCurrencyService.RestrictCurrency(currency, transaction, agentId);
-
-                        }
-                        else if (success && m_dustCurrencyService.m_options.AfterCurrencyPurchaseMessage != string.Empty)
-                            m_dustCurrencyService.SendGridMessage(agentId, String.Format(m_dustCurrencyService.m_options.AfterCurrencyPurchaseMessage, purchaseID.ToString()), false, UUID.Zero);
-                    }
+                    m_dustCurrencyService.StartPurchaseOrATMTransfer(agentId, amountBuying, PurchaseType.InWorldPurchaseOfCurrency, "");
                 }
             }
             XmlRpcResponse returnval = new XmlRpcResponse();

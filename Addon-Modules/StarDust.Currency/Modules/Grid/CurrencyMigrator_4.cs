@@ -6,11 +6,11 @@ using Aurora.Framework;
 
 namespace StarDust.Currency.Grid
 {
-    public class CurrencyMigrator_3 : Migrator
+    public class CurrencyMigrator_4 : Migrator
     {
-        public CurrencyMigrator_3()
+        public CurrencyMigrator_4()
         {
-            Version = new Version(0, 0, 3);
+            Version = new Version(0, 0, 4);
             MigrationName = "Currency";
 
             schema = new List<SchemaDefinition>();
@@ -105,7 +105,35 @@ namespace StarDust.Currency.Grid
                 ColDef("group_id", ColumnTypes.String36),
                 ColDef("teir", ColumnTypes.Integer30)
                 ), IndexDefs(
-                    IndexDef(new [] { "avatar_id", "group_id" }, IndexType.Primary)
+                    IndexDef(new[] { "avatar_id", "group_id" }, IndexType.Primary)
+                ));
+
+            AddSchema("stardust_atm_grids", ColDefs(
+                ColDef("grid_name", ColumnTypes.String36),
+                ColDef("per_dollar", ColumnTypes.Integer30)
+                ), IndexDefs(
+                    IndexDef(new[] { "grid_name" }, IndexType.Primary)
+                ));
+
+
+            AddSchema("stardust_atm_machine_history", ColDefs(
+                ColDef("id", ColumnTypes.String36),
+                ColDef("in_or_out", ColumnTypes.Integer30),
+                ColDef("purchase_id", ColumnTypes.String36),
+                ColDef("atm_name", ColumnTypes.String36),
+                ColDef("grid_name", ColumnTypes.String36),
+                ColDef("amount_paid", ColumnTypes.Integer30),
+                ColDef("this_grid_per_dollar", ColumnTypes.Integer30),
+                ColDef("that_grid_per_dollar", ColumnTypes.Integer30),
+                ColDef("amount_give", ColumnTypes.Integer30),
+                ColDef("from_name", ColumnTypes.String128),
+                ColDef("from_key", ColumnTypes.String36),
+                ColDef("to_name", ColumnTypes.String128),
+                ColDef("to_key", ColumnTypes.String36),
+                ColDef("created", ColumnTypes.Integer30),
+                ColDef("updated", ColumnTypes.Integer30)
+                ), IndexDefs(
+                    IndexDef(new[] { "id" }, IndexType.Primary)
                 ));
         }
 

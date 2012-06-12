@@ -290,14 +290,15 @@ namespace StarDust.Currency.Interfaces
         /// <summary>
         /// Buy currency for the given user
         /// </summary>
+        /// <param name="purchaseID"></param>
         /// <param name="principalID"></param>
         /// <param name="userName"></param>
         /// <param name="amount"></param>
-        /// <param name="purchaseID"></param>
         /// <param name="conversionFactor"></param>
         /// <param name="region"></param>
+        /// <param name="puchaseType"> </param>
         /// <returns></returns>
-        bool UserCurrencyBuy(UUID purchaseID, UUID principalID, string userName, uint amount, float conversionFactor, RegionTransactionDetails region);
+        bool UserCurrencyBuy(UUID purchaseID, UUID principalID, string userName, uint amount, float conversionFactor, RegionTransactionDetails region, int puchaseType);
 
         /// <summary>
         /// 
@@ -326,6 +327,13 @@ namespace StarDust.Currency.Interfaces
         OSDMap OrderSubscription(UUID toId, string toName, string regionName, string notes, string subscriptionID);
         bool CheckIfPurchaseComplete(OSDMap payPalResponse);
         GroupBalance GetGroupBalance(UUID groupID);
+
+        /// <summary>
+        /// Returns the conversion faction of how much per dollar its grid is worth
+        /// </summary>
+        /// <param name="grid_name">Name of the grid</param>
+        /// <returns></returns>
+        int GetGridConversionFactor(string grid_name);
     }
 
     public class RestrictedCurrencyInfo: IDataTransferable

@@ -145,13 +145,14 @@ namespace StarDust.Currency.Grid
         /// <param name="amount"></param>
         /// <param name="conversionFactor"></param>
         /// <param name="region"></param>
+        /// <param name="puchaseType"> </param>
         /// <returns></returns>
-        public bool UserCurrencyBuy(UUID purchaseID, UUID principalID, string userName, uint amount, float conversionFactor, RegionTransactionDetails region)
+        public bool UserCurrencyBuy(UUID purchaseID, UUID principalID, string userName, uint amount, float conversionFactor, RegionTransactionDetails region, int puchaseType)
         {
             List<object> values = new List<object>
             {
                 purchaseID.ToString(),                  // PurchaseID
-                1,                                      // PurchaseType
+                puchaseType,                            // PurchaseType
                 principalID.ToString(),                 // PrincipalID
                 userName,                               // PrincipalID
                 amount,                                 // Amount
@@ -165,9 +166,9 @@ namespace StarDust.Currency.Grid
                 "",                                     // CompleteReference
                 "",                                     // TransactionID
                 Utils.GetUnixTime(),                    // Created
-                Utils.GetUnixTime(),                     // Updated
+                Utils.GetUnixTime(),                    // Updated
                 "",                                     // pyapal raw data
-                ""                                     //notes
+                ""                                      //notes
             };
             m_gd.Insert("stardust_purchased", values.ToArray());
             return true;
@@ -584,6 +585,18 @@ namespace StarDust.Currency.Grid
         }
         #endregion
 
+        #region ATM
+        
+        public int GetGridConversionFactor(string gridName)
+        {
+            QueryFilter q = new QueryFilter();
+            q.andFilters.Add("grid_name", gridName);
+            List<string> dr = m_gd.Query(new[] {"per_dollar"}, "stardust_atm_grids", q, new Dictionary<string, bool>(), null, null);
+            if (dr.Count > 0)
+                return int.Parse(dr[0]);
+            return 0;
+        }
 
+        #endregion
     }
 }

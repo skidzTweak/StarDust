@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Timers;
 using Aurora.Framework;
 using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
@@ -26,18 +28,75 @@ namespace StarDust.Currency.Grid
         private readonly List<UUID> BanList = new List<UUID>();
         private readonly List<string> BanIPs = new List<string>();
         private readonly List<string> AllowedIPs = new List<string>();
-        private readonly List<GridATM> ATMs = new List<GridATM>(); 
+        private readonly List<GridATM> ATMs = new List<GridATM>();
+        private readonly Timer taskTimer = new Timer();
 
 
-        public StarDustCurrencyPostHandlerATM(string url, DustCurrencyService service, IRegistryCore registry, string password, StarDustConfig options)
+        public StarDustCurrencyPostHandlerATM(string url, DustCurrencyService service, IRegistryCore registry, StarDustConfig options)
             : base("POST", url)
         {
             m_options = options;
             m_starDustCurrencyService = service;
             m_registry = registry;
-            m_password = Util.Md5Hash(password);
+            m_password = Util.Md5Hash(m_options.ATMPassword);
             BanIPs = m_options.ATMIPBan.Split(';').ToList();
             AllowedIPs = m_options.ATMIPAllow.Split(';').ToList();
+            taskTimer.Interval = (120*60)*60; // every 120 min
+            taskTimer.Elapsed +=taskTimer_Elapsed;
+        }
+
+        private void taskTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            foreach (GridATM gridAtm in ATMs)
+            {
+                if (gridAtm.Registerd)
+                {
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(gridAtm.URL + "?data=" + gridAtm.ATMPassword + "&function=info");
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    Stream resStream = response.GetResponseStream();
+                    if (resStream != null)
+                    {
+                        StreamReader reader = new StreamReader(resStream);
+                        string responseFromServer = reader.ReadToEnd();
+                        string[] info = Uri.UnescapeDataString(responseFromServer.Trim()).Split('|');
+                        if (Util.Md5Hash(info[0]) != m_password)
+                        {
+                            m_log.ErrorFormat("[StarDustATM] ATM response was not correct in task checker - {0}", info);
+                            continue;
+                        }
+                        
+                        int per_dollar = m_starDustCurrencyService.m_database.GetGridConversionFactor(gridAtm.GridName);
+                        if (per_dollar == 0)
+                        {
+                            m_log.ErrorFormat("[StarDustATM] Can not find grid named {0} in stardust_atm_grids.", gridAtm.GridName);
+                            continue;
+                        }
+                        
+                        for (int loop = 1; loop < info.Length; loop++)
+                        {
+                            string[] info2 = info[loop].Trim().Split('~');
+                            if (info2[0] == "waspaid")
+                            {
+                                string from_agent_name = info2[1];
+                                string from_agent_key = info2[2];
+                                int amount_paid = int.Parse(info2[3]);
+                                string to_name = info2[4];
+                                string to_key = info2[5];
+
+                                double myconversionfactor = m_options.RealCurrencyConversionFactor / per_dollar;
+                                int get_amount = (int)Math.Floor(amount_paid*myconversionfactor);
+
+                                UUID result = m_starDustCurrencyService.StartPurchaseOrATMTransfer(new UUID(to_key), (uint)get_amount, PurchaseType.ATMTransferFromAnotherGrid, "");
+
+
+                            }
+
+                        }
+                       
+
+                    }
+                }
+            }
         }
 
         #region Overrides of BaseStreamHandler
@@ -51,7 +110,7 @@ namespace StarDust.Currency.Grid
                 m_log.ErrorFormat("[StarDustATM] A Banned IPAddress attempted access ATM {0}", ipa);
                 return new UTF8Encoding().GetBytes("");
             }
-            if ((AllowedIPs.Count > 0) && (!AllowedIPs.Contains(ipa)))
+            if ((AllowedIPs.Count > 0) && (!AllowedIPs.Contains(ipa)) && (AllowedIPs[0] != ""))
             {
                 m_log.ErrorFormat("[StarDustATM] This IP is not allowed {0}", ipa);
                 return new UTF8Encoding().GetBytes("");
@@ -65,13 +124,13 @@ namespace StarDust.Currency.Grid
             //m_log.DebugFormat("[XXX]: query String: {0}", body);
             try
             {
-                string[] info = body.Split('|');
-                if (info.Length == 3)
+                string[] info = Uri.UnescapeDataString(body).Split('|');
+                if (info.Length == 4)
                 {
                     UUID hisID;
                     if (UUID.TryParse(info[0], out hisID))
                     {
-                        if (!BanList.Contains(hisID))
+                        if (BanList.Contains(hisID))
                         {
                             m_log.ErrorFormat("[StarDustATM] This object is banned for to many tried {0}", hisID);
                             return new UTF8Encoding().GetBytes("");
@@ -80,51 +139,57 @@ namespace StarDust.Currency.Grid
                         string tempPassword = info[2];
                         if (weburl.StartsWith("http"))
                         {
-                            OSDMap replyData = WebUtils.PostToService(weburl, new OSDMap
-                                                                                 {
-                                                                                     {"Method", "handshake"},
-                                                                                     {"tempPassword", tempPassword}
-                                                                                 }, true, false);
-                            // can't send it hashed unless we have a class that can hash a string exactly like LL scripts
-                            if (Util.Md5Hash(replyData["password"].AsString()) == m_password)
+                            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(weburl + "?temp=" + tempPassword);
+                            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                            Stream resStream = response.GetResponseStream();
+                            if (resStream != null)
                             {
-                                string tempPass = GenTempPass();
-                                bool wasfound = false;
-                                foreach (GridATM gridAtm in ATMs.Where(gridAtm => gridAtm.ID == hisID))
+                                StreamReader reader = new StreamReader(resStream);
+                                string responseFromServer = reader.ReadToEnd();
+                                if (Util.Md5Hash(responseFromServer) == m_password)
                                 {
-                                    wasfound = true;
-                                    gridAtm.URL = weburl;
-                                    gridAtm.Registerd = true;
-                                    gridAtm.Tries = 0;
-                                    gridAtm.ATMPassword = tempPass;
+                                    string tempPass = GenTempPass();
+                                    bool wasfound = false;
+                                    foreach (GridATM gridAtm in ATMs.Where(gridAtm => gridAtm.ID == hisID))
+                                    {
+                                        wasfound = true;
+                                        gridAtm.URL = weburl;
+                                        gridAtm.Registerd = true;
+                                        gridAtm.Tries = 0;
+                                        gridAtm.ATMPassword = tempPass;
+                                        gridAtm.GridName = info[3];
+                                    }
+                                    if (!wasfound)
+                                    {
+                                        ATMs.Add(new GridATM { ID = hisID, URL = weburl, Registerd = true, Tries = 0, ATMPassword = tempPass });
+                                    }
+                                    return new UTF8Encoding().GetBytes(tempPass);
                                 }
-                                if (!wasfound)
+                                else
                                 {
-                                    ATMs.Add(new GridATM { ID = hisID, URL = weburl, Registerd = true, Tries = 0, ATMPassword = tempPass });
+                                    m_log.ErrorFormat("[StarDustATM] Failed to validate ATM {0} - {1}", ipa, hisID);
+                                    // need to track the number of tries
+                                    bool wasfound = false;
+                                    foreach (GridATM gridAtm in ATMs.Where(gridAtm => gridAtm.ID == hisID))
+                                    {
+                                        wasfound = true;
+                                        gridAtm.Registerd = false;
+                                        gridAtm.Tries += 1;
+                                        if (gridAtm.Tries <= numberofTries) continue;
+                                        BanIPs.Add(ipa);
+                                        BanList.Add(hisID);
+                                        m_log.ErrorFormat("[StarDustATM] Has banned the following IP for not responding correctly {0}", ipa);
+                                        m_log.ErrorFormat("[StarDustATM] Has banned the following object ID for not responding correctly {0}", hisID);
+                                    }
+                                    if (!wasfound)
+                                    {
+                                        ATMs.Add(new GridATM { ID = hisID, URL = weburl, Registerd = false, Tries = 1 });
+                                    }
                                 }
-                                return new UTF8Encoding().GetBytes(tempPass);
                             }
-                            else
-                            {
-                                m_log.ErrorFormat("[StarDustATM] Failed to validate ATM {0} - {1}", ipa, hisID);
-                                // need to track the number of tries
-                                bool wasfound = false;
-                                foreach (GridATM gridAtm in ATMs.Where(gridAtm => gridAtm.ID == hisID))
-                                {
-                                    wasfound = true;
-                                    gridAtm.Registerd = false;
-                                    gridAtm.Tries += 1;
-                                    if (gridAtm.Tries <= numberofTries) continue;
-                                    BanIPs.Add(ipa);
-                                    BanList.Add(hisID);
-                                    m_log.ErrorFormat("[StarDustATM] Has banned the following IP for not responding correctly {0}", ipa);
-                                    m_log.ErrorFormat("[StarDustATM] Has banned the following object ID for not responding correctly {0}", hisID);
-                                }
-                                if (!wasfound)
-                                {
-                                    ATMs.Add(new GridATM { ID = hisID, URL = weburl, Registerd = false, Tries = 1 });
-                                }
-                            }
+
+
+                            
                         }
                         else
                         {
@@ -172,5 +237,7 @@ namespace StarDust.Currency.Grid
         public int Tries { get; set; }
         public bool Registerd { get; set; }
         public string ATMPassword { get; set; }
+
+        public string GridName { get; set; }
     }
 }
