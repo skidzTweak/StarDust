@@ -129,23 +129,18 @@ namespace StarDust.Currency
                                                           handlerConfig.GetString("WebUIHandlerPassword", string.Empty));
 
                 IHttpServer httpServer = null;
-                if (password == "")
                 httpServer = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
                         handlerConfig.GetUInt("WireduxHandlerPort", handlerConfig.GetUInt("WebUIHTTPPort", 8002)));
-                
-                if (httpServer == null) throw new ArgumentNullException("httpServer");
-                m_log.ErrorFormat("[]");
 
-                httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry,
+                if (password != "")
+                    httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerWebUI("/StarDustWebUI", this, m_registry,
                                                                                  password, m_options));
 
                 if ((m_options.ATMGridURL != "") && (m_options.ATMPassword != ""))
                     httpServer.AddStreamHandler(new StarDustCurrencyPostHandlerATM("/StardustATM_" + m_options.ATMGridURL, this, m_registry, m_options));
 
                 if ((m_options.GiveStipends) && (m_options.Stipend > 0))
-                {
                     m_stupends = new GiveStipends(m_options, m_registry, this);
-                }
             }
         }
 
