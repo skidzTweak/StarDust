@@ -576,12 +576,12 @@ namespace StarDust.Currency.Grid
 
         private void UserCurrencyCreate(UUID agentId)
         {
-            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 0, 0, 0 });
+            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 0, 0, 0, 0 });
         }
 
         private void GroupCurrencyCreate(UUID agentId)
         {
-            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 1, 0, 0 });
+            m_gd.Insert("stardust_currency", new object[] { agentId.ToString(), 0, 0, 0, 1, 0, 0, 0 });
         }
         #endregion
 
