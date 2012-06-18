@@ -17,7 +17,7 @@ using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Grid
 {
-    class StarDustCurrencyPostHandlerWebUI : BaseStreamHandler
+    class StarDustCurrencyPostHandlerWebUI : BaseRequestHandler
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
