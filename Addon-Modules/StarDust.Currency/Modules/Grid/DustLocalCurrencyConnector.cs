@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Aurora.DataManager;
 using Aurora.Framework;
+using StarDust.Currency.Region;
 using log4net;
 using OpenMetaverse;
 using Nini.Config;
@@ -56,6 +57,7 @@ namespace StarDust.Currency.Grid
                 AddMoney);
         }
 
+		public StarDustRegionPostHandler regionPostHandler { get; set; }
         public string Name
         {
             get { return "IStarDustCurrencyConnector"; }
@@ -549,7 +551,7 @@ namespace StarDust.Currency.Grid
 
             // get users currency
 
-            StarDustUserCurrency fromBalance = GetUserCurrency(transaction.FromID);
+            StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
 
             // Ensure sender has enough money
             if ((!m_options.AllowBankerToHaveNoMoney ||

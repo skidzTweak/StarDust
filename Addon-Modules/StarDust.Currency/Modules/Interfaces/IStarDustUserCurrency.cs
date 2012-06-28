@@ -3,6 +3,7 @@ using Aurora.Framework;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OpenSim.Services.Interfaces;
+using StarDust.Currency.Region;
 
 namespace StarDust.Currency.Interfaces
 {
@@ -262,6 +263,8 @@ namespace StarDust.Currency.Interfaces
         bool CheckEnabled();
         void SetMoneyModule(MoneyModule moneyModule);
         UserAccount GetUserAccount(UUID fromID);
+
+        DustRegionService StarDustRegionService { get; set; }
 
         GroupBalance GetGroupBalance(UUID groupID);
     }

@@ -48,11 +48,8 @@ namespace StarDust.Currency.Region
                 m_enabled = ((m_connector != null) && (m_connector.Enabled));
                 if (!m_enabled) return;
                 
-                m_connector.SetRegionService(this);
+                m_connector.StarDustRegionService = this;
             }
-            
-            MainServer.Instance.AddStreamHandler(new StarDustRegionPostHandler("/StarDustRegion", this));
-
             m_objectCapacity = scene.RegionInfo.ObjectCapacity;
             scene.RegisterModuleInterface<IStardustRegionService>(this);
             m_scenes.Add(scene);

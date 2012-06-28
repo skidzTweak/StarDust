@@ -31,9 +31,9 @@ namespace StarDust.Currency
         protected const string Version = "0.19";
         private DustRPCHandler m_rpc;
         private MoneyModule m_moneyModule = null;
-        private DustRegionService m_dustRegionService = null;
         private IScheduleService m_scheduler;
         private GiveStipends m_stupends;
+		private IStarDustRegionPostHandler regionPostHandler;
 
         #region Properties
         public IScheduleService Scheduler
@@ -88,9 +88,9 @@ namespace StarDust.Currency
             {
                 m_scheduler.Register("RestrictedCurrencyPurchaseRemove", RestrictedCurrencyPurchaseRemove_Event);
                 m_scheduler.Register("RestrictedCurrencySpendRemove", RestrictedCurrencySpendRemove_Event);
-
-                m_moneyModule = m_registry.RequestModuleInterface<IMoneyModule>() as MoneyModule;
             }
+			regionPostHandler = m_registry.RequestModuleInterface<IStarDustRegionPostHandler>();
+			m_moneyModule = m_registry.RequestModuleInterface<IMoneyModule>() as MoneyModule;
         }
 
         private object RestrictedCurrencySpendRemove_Event(string functionname, object parameters)
@@ -252,10 +252,7 @@ namespace StarDust.Currency
             m_moneyModule = moneyModule;
         }
 
-        public void SetRegionService(DustRegionService dustRegionService)
-        {
-            m_dustRegionService = dustRegionService;
-        }
+        public DustRegionService StarDustRegionService { get; set; }
 
         #endregion
 
@@ -272,20 +269,7 @@ namespace StarDust.Currency
                     IRegionClientCapsService regionClient = client.GetRootCapsService();
                     if (regionClient != null)
                     {
-                        string serverURI = regionClient.Region.ServerURI + "/StarDustRegion";
-                        string replyData = WebUtils.PostToService(serverURI, new OSDMap
-                                                                                 {
-                                                                                     {"Method", "parceldetails"},
-                                                                                     {"agentid", agentId}
-                                                                                 });
-                        if (replyData != "")
-                        {
-                            OSDMap innerReply = (OSDMap)OSDParser.DeserializeJson(replyData);
-                            if (innerReply["Result"].AsString() == "Successful")
-                                return innerReply;
-                            m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI + ", " +
-                                        innerReply["Result"]);
-                        }
+						regionPostHandler.ParcelDetailsRegionPostHandler(regionClient.Region.RegionID, client.AgentID);
                     }
                 }
             }
@@ -310,27 +294,8 @@ namespace StarDust.Currency
                     IRegionClientCapsService regionClient = client.GetRootCapsService();
                     if (regionClient != null)
                     {
-                        string serverURI = regionClient.Region.ServerURI + "/StarDustRegion";
-                        string replyData = WebUtils.PostToService(serverURI, new OSDMap
-                                                                                    {
-                                                                                        {"Method", "sendgridmessage"},
-                                                                                        {"toId", toId},
-                                                                                        {"message", message},
-                                                                                        {"goDeep", false},
-                                                                                        {
-                                                                                            "transactionId",
-                                                                                            transactionId
-                                                                                            }
-                                                                                    });
-                        if (replyData != "")
-                        {
-                            OSDMap innerReply = (OSDMap)OSDParser.DeserializeJson(replyData);
-                            if (innerReply["Result"].AsString() == "Successful")
-                                return true;
-                            m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI +
-                                        ", " +
-                                        innerReply["Result"]);
-                        }
+                        regionPostHandler.SendGridMessageRegionPostHandler(regionClient.Region.RegionID, toId, message,
+                                                                     transactionId);
                     }
                 }
             }
@@ -389,9 +354,9 @@ namespace StarDust.Currency
             string toObjectName = "";
 
 
-            if ((fromObjectID != UUID.Zero) && (m_dustRegionService != null))
+            if ((fromObjectID != UUID.Zero) && (StarDustRegionService != null))
             {
-                ISceneChildEntity ce = m_dustRegionService.FindObject(fromObjectID, out scene);
+                ISceneChildEntity ce = StarDustRegionService.FindObject(fromObjectID, out scene);
                 if (ce != null)
                 {
                     fromObjectName = ce.Name;
@@ -399,9 +364,9 @@ namespace StarDust.Currency
                 }
             }
 
-            if ((toObjectID != UUID.Zero) && (m_dustRegionService != null))
+            if ((toObjectID != UUID.Zero) && (StarDustRegionService != null))
             {
-                ISceneChildEntity ce = m_dustRegionService.FindObject(toObjectID, out scene);
+                ISceneChildEntity ce = StarDustRegionService.FindObject(toObjectID, out scene);
                 if (ce != null)
                 {
                     toObjectName = ce.Name;
@@ -409,16 +374,16 @@ namespace StarDust.Currency
                 }
             }
 
-            if ((scene == null) && (m_dustRegionService != null))
+            if ((scene == null) && (StarDustRegionService != null))
             {
-                scene = m_dustRegionService.FindScene(fromID);
+                scene = StarDustRegionService.FindScene(fromID);
                 if ((scene != null) && (transactionPosition.Length == 0))
                     transactionPosition = scene.GetScenePresence(fromID).AbsolutePosition.ToString();
             }
 
-            if ((scene == null) && (toID != UUID.Zero) && (m_dustRegionService != null))
+            if ((scene == null) && (toID != UUID.Zero) && (StarDustRegionService != null))
             {
-                scene = m_dustRegionService.FindScene(toID);
+                scene = StarDustRegionService.FindScene(toID);
                 if ((scene != null) && (transactionPosition.Length == 0))
                     transactionPosition = scene.GetScenePresence(toID).AbsolutePosition.ToString();
             }
@@ -463,9 +428,9 @@ namespace StarDust.Currency
             string fromName = "";
             if (fromID != UUID.Zero)
             {
-                if (m_dustRegionService != null)
+                if (StarDustRegionService != null)
                 {
-                    IClientAPI icapiFrom = m_dustRegionService.GetUserClient(fromID);
+                    IClientAPI icapiFrom = StarDustRegionService.GetUserClient(fromID);
                     if (icapiFrom != null)
                         fromName = icapiFrom.Name;
                 }
@@ -477,9 +442,9 @@ namespace StarDust.Currency
                 }
                 if (fromName == "")
                 {
-                    if (m_dustRegionService != null)
+                    if (StarDustRegionService != null)
                     {
-                        ISceneChildEntity ce = m_dustRegionService.FindObject(fromID, out scene);
+                        ISceneChildEntity ce = StarDustRegionService.FindObject(fromID, out scene);
                         if (ce != null)
                         {
                             fromObjectID = fromID;
@@ -509,9 +474,9 @@ namespace StarDust.Currency
             string toName = "";
             if (toID != UUID.Zero)
             {
-                if (m_dustRegionService != null)
+                if (StarDustRegionService != null)
                 {
-                    IClientAPI icapiFrom = m_dustRegionService.GetUserClient(toID);
+                    IClientAPI icapiFrom = StarDustRegionService.GetUserClient(toID);
                     if (icapiFrom != null)
                         toName = icapiFrom.Name;
                 }
@@ -523,9 +488,9 @@ namespace StarDust.Currency
                 }
                 if (toName == "")
                 {
-                    if (m_dustRegionService != null)
+                    if (StarDustRegionService != null)
                     {
-                        ISceneChildEntity ce = m_dustRegionService.FindObject(toID, out scene);
+                        ISceneChildEntity ce = StarDustRegionService.FindObject(toID, out scene);
                         if (ce != null)
                         {
                             toObjectID = toID;

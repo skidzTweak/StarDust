@@ -4,6 +4,9 @@ using System.Reflection;
 using Aurora.Framework;
 using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
+using Nini.Config;
+using OpenMetaverse;
+using OpenSim.Services.Interfaces;
 using log4net;
 using OpenMetaverse.StructuredData;
 using OpenSim.Region.Framework.Interfaces;
@@ -11,99 +14,62 @@ using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Region
 {
-    class StarDustRegionPostHandler : BaseRequestHandler, IStreamedRequestHandler
+    public class StarDustRegionPostHandler : ConnectorBaseG2R, IService, IStarDustRegionPostHandler
     {
         private readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly IStardustRegionService m_currenyService;
-
-        public StarDustRegionPostHandler(string url, IStardustRegionService service) :
-            base("POST", url)
-        {
-            m_currenyService = service;
-        }
-
-        public override byte[] Handle(string path, Stream requestData,
-                OSHttpRequest httpRequest, OSHttpResponse httpResponse)
-        {
-            StreamReader sr = new StreamReader(requestData);
-            string body = sr.ReadToEnd();
-            sr.Close();
-            body = body.Trim();
-
-            m_log.DebugFormat("[StarDustRegionPostHandler]: query String: {0}", body);
-
-            try
-            {
-                OSDMap map = WebUtils.GetOSDMap(body);
-                if ((map == null) || (!map.ContainsKey("Method")))
-                    return FailureResult();
-
-                switch (map["Method"].AsString())
-                {
-                    case "parceldetails":
-                        return ParcelDetails(map);
-                    case "sendgridmessage":
-                        return SendGridMessage(map);
-                }
-                m_log.DebugFormat("[StarDustRegionPostHandler]: unknown method {0} request {1}", map["Method"].AsString().Length, map["Method"].AsString());
-            }
-            catch (Exception e)
-            {
-                m_log.DebugFormat("[StarDustRegionPostHandler]: Exception {0}", e);
-            }
-            return FailureResult();
-        }
-
-        private byte[] SendGridMessage(OSDMap map)
-        {
-            return m_currenyService.SendGridMessage(map["toId"].AsUUID(), map["message"].AsString(), false, map["transactionId"].AsUUID())
-                       ? SuccessfulResult()
-                       : FailureResult();
-        }
+        private IStarDustCurrencyService m_currenyService;
 
         #region Functions
-        private byte[] ParcelDetails(OSDMap map)
+        [CanBeReflected(ThreatLevel = ThreatLevel.Low)]
+        public bool SendGridMessageRegionPostHandler(UUID regionID, UUID agentID, string message, UUID transactionID)
         {
+            if (m_doRemoteCalls)
+                return (bool)DoRemote(regionID, agentID, message, transactionID);
+            return m_currenyService.StarDustRegionService.SendGridMessage(agentID, message, false, transactionID);
+        }
+
+        [CanBeReflected(ThreatLevel = ThreatLevel.Low)]
+        public LandData ParcelDetailsRegionPostHandler(UUID regionID, UUID agentid)
+        {
+            if (m_doRemoteCalls)
+                return (LandData)DoRemote(regionID, agentid);
             IScenePresence sp;
-            if (
-                (map.ContainsKey("agentid")) &&
-                m_currenyService.FindScene(map["agentid"].AsUUID()).TryGetScenePresence(map["agentid"].AsUUID(), out sp)
-                )
+            if (m_currenyService.StarDustRegionService.FindScene(agentid).TryGetScenePresence(agentid, out sp))
             {
                 IParcelManagementModule parcelManagement = sp.Scene.RequestModuleInterface<IParcelManagementModule>();
                 ILandObject parcel = parcelManagement.GetLandObject(sp.AbsolutePosition.X, sp.AbsolutePosition.Y);
-                OSDMap results = parcel.LandData.ToOSD();
-                results.Add("Result", "Successful");
-                return Util.UTF8.GetBytes(OSDParser.SerializeJsonString(results));
+                return parcel.LandData;
             }
-            return FailureResult();
+            return null;
         }
         #endregion
-        #region Misc
 
-        private byte[] FailureResult()
+        #region Implementation of IService
+
+        public void Initialize(IConfigSource config, IRegistryCore registry)
         {
-            return Return(new OSDMap
-                              {
-                        {"Result", "Failure"}
-                    });
+            m_registry = registry;
+            Init(registry, "StarDustRegionPostHandler");
+            m_registry.RegisterModuleInterface<IStarDustRegionPostHandler>(this);
         }
 
-        private byte[] SuccessfulResult()
+        public void Start(IConfigSource config, IRegistryCore registry)
         {
-            return Return(new OSDMap
-                              {
-                        {"Result", "Successful"}
-                    });
+
         }
 
-        private byte[] Return(OSDMap result)
+        public void FinishedStartup()
         {
-            //m_log.DebugFormat("[AuroraDataServerPostHandler]: resp string: {0}", xmlString);
-            return Util.UTF8.GetBytes(OSDParser.SerializeJsonString(result));
+            m_currenyService = m_registry.RequestModuleInterface<IStarDustCurrencyService>();
         }
 
         #endregion
+    }
+
+    public interface IStarDustRegionPostHandler
+    {
+        LandData ParcelDetailsRegionPostHandler(UUID regionID, UUID agentid);
+        bool SendGridMessageRegionPostHandler(UUID regionID, UUID agentID, string message, UUID transactionID);
     }
 }
