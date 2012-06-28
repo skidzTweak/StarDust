@@ -262,6 +262,8 @@ namespace StarDust.Currency.Interfaces
         bool CheckEnabled();
         void SetMoneyModule(MoneyModule moneyModule);
         UserAccount GetUserAccount(UUID fromID);
+
+        GroupBalance GetGroupBalance(UUID groupID);
     }
 
     public interface IStardustRegionService

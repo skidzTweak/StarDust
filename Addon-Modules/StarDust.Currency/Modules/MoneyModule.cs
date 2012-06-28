@@ -11,15 +11,14 @@ namespace StarDust.Currency
     {
         private bool m_enabled = false;
         private IRegistryCore m_registry;
-        private DustCurrencyService m_stardustservice;
+        private IStarDustCurrencyService m_stardustservice;
         private StarDustConfig m_options;
-        private int m_clientport;
 
         public int ClientPort
         {
             get
             {
-                return m_clientport;
+                return (int)MainServer.Instance.Port;
             }
         }
 
@@ -33,7 +32,6 @@ namespace StarDust.Currency
         public void Start(IConfigSource config, IRegistryCore registry)
         {
             m_registry = registry;
-            m_clientport = config.Configs["Handlers"].GetInt("LLLoginHandlerPort", 0);
             m_stardustservice = m_registry.RequestModuleInterface<IStarDustCurrencyService>() as DustCurrencyService;
             if (m_stardustservice == null) return;
             m_enabled = true;
@@ -42,8 +40,6 @@ namespace StarDust.Currency
 
         public void FinishedStartup()
         {
-            if ((!m_enabled) || (m_stardustservice == null)) return;
-            m_stardustservice.SetMoneyModule(this);
         }
 
         #endregion
@@ -82,9 +78,6 @@ namespace StarDust.Currency
             return m_stardustservice.UserCurrencyTransfer(toID, fromID, toObjectID, fromObjectID, (uint)amount, description, type, UUID.Random());
         }
 
-
-
-
         #endregion
 
         #region properties
@@ -108,6 +101,7 @@ namespace StarDust.Currency
         #endregion
 
         #region event
+
         public event ObjectPaid OnObjectPaid;
         public event PostObjectPaid OnPostObjectPaid;
 
@@ -146,13 +140,11 @@ namespace StarDust.Currency
 
         public virtual GroupBalance GetGroupBalance(UUID groupID)
         {
-            return m_stardustservice.Database.GetGroupBalance(groupID);
+            return m_stardustservice.GetGroupBalance(groupID);
         }
 
         #endregion
 
         #endregion
-
-
     }
 }

@@ -11,7 +11,7 @@ using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Region
 {
-    class StarDustRegionPostHandler : BaseStreamHandler
+    class StarDustRegionPostHandler : BaseRequestHandler, IStreamedRequestHandler
     {
         private readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 

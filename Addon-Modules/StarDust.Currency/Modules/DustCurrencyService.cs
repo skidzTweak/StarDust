@@ -88,8 +88,9 @@ namespace StarDust.Currency
             {
                 m_scheduler.Register("RestrictedCurrencyPurchaseRemove", RestrictedCurrencyPurchaseRemove_Event);
                 m_scheduler.Register("RestrictedCurrencySpendRemove", RestrictedCurrencySpendRemove_Event);
-            }
 
+                m_moneyModule = m_registry.RequestModuleInterface<IMoneyModule>() as MoneyModule;
+            }
         }
 
         private object RestrictedCurrencySpendRemove_Event(string functionname, object parameters)
@@ -183,6 +184,7 @@ namespace StarDust.Currency
             }
             return m_enabled;
         }
+
         #endregion
 
         #endregion
@@ -216,6 +218,14 @@ namespace StarDust.Currency
             if (m_doRemoteCalls)
                 return (Transaction)DoRemote(transaction);
             return m_database.UserCurrencyTransaction(transaction);
+        }
+
+        [CanBeReflected(ThreatLevel = ThreatLevel.Low)]
+        public GroupBalance GetGroupBalance(UUID groupID)
+        {
+            if (m_doRemoteCalls)
+                return (GroupBalance)DoRemote(groupID);
+            return m_database.GetGroupBalance(groupID);
         }
 
         [CanBeReflected(ThreatLevel = ThreatLevel.Low)]
@@ -263,27 +273,18 @@ namespace StarDust.Currency
                     if (regionClient != null)
                     {
                         string serverURI = regionClient.Region.ServerURI + "/StarDustRegion";
-                        OSDMap replyData = WebUtils.PostToService(serverURI, new OSDMap
+                        string replyData = WebUtils.PostToService(serverURI, new OSDMap
                                                                                  {
                                                                                      {"Method", "parceldetails"},
                                                                                      {"agentid", agentId}
-                                                                                 }, true, true);
-                        if (replyData["Success"].AsBoolean())
+                                                                                 });
+                        if (replyData != "")
                         {
-                            if (replyData["_Result"].Type != OSDType.Map)
-                            {
-                                // don't return check the other servers uris
-                                m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI +
-                                           ", connection did not have all the required data.");
-                            }
-                            else
-                            {
-                                OSDMap innerReply = (OSDMap)replyData["_Result"];
-                                if (innerReply["Result"].AsString() == "Successful")
-                                    return innerReply;
-                                m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI + ", " +
-                                           innerReply["Result"]);
-                            }
+                            OSDMap innerReply = (OSDMap)OSDParser.DeserializeJson(replyData);
+                            if (innerReply["Result"].AsString() == "Successful")
+                                return innerReply;
+                            m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI + ", " +
+                                        innerReply["Result"]);
                         }
                     }
                 }
@@ -310,7 +311,7 @@ namespace StarDust.Currency
                     if (regionClient != null)
                     {
                         string serverURI = regionClient.Region.ServerURI + "/StarDustRegion";
-                        OSDMap replyData = WebUtils.PostToService(serverURI, new OSDMap
+                        string replyData = WebUtils.PostToService(serverURI, new OSDMap
                                                                                     {
                                                                                         {"Method", "sendgridmessage"},
                                                                                         {"toId", toId},
@@ -320,23 +321,15 @@ namespace StarDust.Currency
                                                                                             "transactionId",
                                                                                             transactionId
                                                                                             }
-                                                                                    }, true, true);
-                        if (replyData["Success"].AsBoolean())
+                                                                                    });
+                        if (replyData != "")
                         {
-                            if (replyData["_Result"].Type != OSDType.Map)
-                            {
-                                // don't return check the other servers uris
-                                m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI);
-                            }
-                            else
-                            {
-                                OSDMap innerReply = (OSDMap)replyData["_Result"];
-                                if (innerReply["Result"].AsString() == "Successful")
-                                    return true;
-                                m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI +
-                                            ", " +
-                                            innerReply["Result"]);
-                            }
+                            OSDMap innerReply = (OSDMap)OSDParser.DeserializeJson(replyData);
+                            if (innerReply["Result"].AsString() == "Successful")
+                                return true;
+                            m_log.Warn("[CURRENCY CONNECTOR]: Unable to connect successfully to " + serverURI +
+                                        ", " +
+                                        innerReply["Result"]);
                         }
                     }
                 }

@@ -7,6 +7,7 @@ using log4net;
 using OpenMetaverse;
 using Nini.Config;
 using OpenMetaverse.StructuredData;
+using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
 
 namespace StarDust.Currency.Grid
@@ -17,14 +18,16 @@ namespace StarDust.Currency.Grid
         private IGenericData m_gd;
         private bool m_enabled;
         private StarDustConfig m_options;
+        private IRegistryCore m_registry;
 
         #region IAuroraDataPlugin
 
-        public void Initialize(IGenericData gd, IConfigSource source, IRegistryCore simBase, string defaultConnectionString)
+        public void Initialize(IGenericData gd, IConfigSource source, IRegistryCore registry, string defaultConnectionString)
         {
             if (source.Configs["AuroraConnectors"].GetString("CurrencyConnector", "LocalConnector") != "LocalConnector")
                 return;
             m_gd = gd;
+            m_registry = registry;
 
             if (source.Configs["Currency"].GetString("Module", "") != "StarDust")
                 return;
@@ -44,6 +47,13 @@ namespace StarDust.Currency.Grid
             DataManager.RegisterPlugin(Name, this);
 
             m_options = new StarDustConfig(economyConfig);
+
+            MainConsole.Instance.Commands.AddCommand("money add", "money add", "Adds money to a user's account.",
+                AddMoney);
+            MainConsole.Instance.Commands.AddCommand("money set", "money set", "Sets the amount of money a user has.",
+                AddMoney);
+            MainConsole.Instance.Commands.AddCommand("money get", "money get", "Gets the amount of money a user has.",
+                AddMoney);
         }
 
         public string Name
@@ -53,6 +63,123 @@ namespace StarDust.Currency.Grid
 
         public void Dispose()
         {
+        }
+
+        #endregion
+
+        #region Console Functiosn
+
+        public void AddMoney(string[] cmd)
+        {
+            string name = MainConsole.Instance.Prompt("User Name: ");
+            uint amount = 0;
+            while(!uint.TryParse(MainConsole.Instance.Prompt("Amount: ", "0"), out amount))
+                MainConsole.Instance.Info("Bad input, must be a number > 0");
+
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            if(account == null)
+            {
+                MainConsole.Instance.Info("No account found");
+                return;
+            }
+            var currency = GetUserCurrency(account.PrincipalID);
+            Transaction transaction;
+            if (!WriteHistory(new Transaction() 
+            {
+                Amount = currency.Amount + amount,
+                Complete = 1,
+                Description = "Console command set money to " + currency.Amount + amount,
+                CompleteReason = "Console command set money to " + currency.Amount + amount,
+                FromID = UUID.Zero,
+                FromBalance = 0,
+                FromName = "",
+                FromObjectID = UUID.Zero,
+                FromObjectName = "",
+                ToBalance = currency.Amount + amount,
+                ToID = account.PrincipalID,
+                ToName = account.Name,
+                ToObjectID = UUID.Zero,
+                ToObjectName = "",
+                TransactionID = UUID.Random(),
+                TypeOfTrans = TransactionType.SystemGenerated 
+            } , out transaction))
+            {
+                MainConsole.Instance.Info("Failed to write transaction history");
+            }
+            m_gd.Update("stardust_currency",
+                        new Dictionary<string, object> { 
+                        {
+                            "Amount", currency.Amount + amount }
+                        }, null, new QueryFilter() 
+                        { 
+                            andFilters = new Dictionary<string, object> { { "PrincipalID", account.PrincipalID } }
+                        }, null, null);
+            MainConsole.Instance.Info(account.Name + " now has $" + (currency.Amount + amount));
+        }
+
+        public void SetMoney(string[] cmd)
+        {
+            string name = MainConsole.Instance.Prompt("User Name: ");
+            uint amount = 0;
+            while(!uint.TryParse(MainConsole.Instance.Prompt("Set User's Money Amount: ", "0"), out amount))
+                MainConsole.Instance.Info("Bad input, must be a number > 0");
+
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            if(account == null)
+            {
+                MainConsole.Instance.Info("No account found");
+                return;
+            }
+            var currency = GetUserCurrency(account.PrincipalID);
+            Transaction transaction;
+            if (!WriteHistory(new Transaction() 
+            {
+                Amount = amount,
+                Complete = 1,
+                Description = "Console command set money to " + amount,
+                CompleteReason = "Console command set money to " + amount,
+                FromID = UUID.Zero,
+                FromBalance = 0,
+                FromName = "",
+                FromObjectID = UUID.Zero,
+                FromObjectName = "",
+                ToBalance = amount,
+                ToID = account.PrincipalID,
+                ToName = account.Name,
+                ToObjectID = UUID.Zero,
+                ToObjectName = "",
+                TransactionID = UUID.Random(),
+                TypeOfTrans = TransactionType.SystemGenerated 
+            } , out transaction))
+            {
+                MainConsole.Instance.Info("Failed to write transaction history");
+            }
+            m_gd.Update("stardust_currency",
+                        new Dictionary<string, object> { 
+                        {
+                            "Amount", amount }
+                        }, null, new QueryFilter() 
+                        { 
+                            andFilters = new Dictionary<string, object> { { "PrincipalID", account.PrincipalID } }
+                        }, null, null);
+            MainConsole.Instance.Info(account.Name + " now has $" + amount);
+        }
+
+        public void GetMoney(string[] cmd)
+        {
+            string name = MainConsole.Instance.Prompt("User Name: ");
+            uint amount = 0;
+            while(!uint.TryParse(MainConsole.Instance.Prompt("Set User's Money Amount: ", "0"), out amount))
+                MainConsole.Instance.Info("Bad input, must be a number > 0");
+
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            if(account == null)
+            {
+                MainConsole.Instance.Info("No account found");
+                return;
+            }
+            var currency = GetUserCurrency(account.PrincipalID);
+            MainConsole.Instance.Info(account.Name + " has $" + currency.Amount);
         }
 
         #endregion
@@ -422,11 +549,11 @@ namespace StarDust.Currency.Grid
 
             // get users currency
 
-            StarDustUserCurrency fromBalance = GetUserCurrency(new UUID(transaction.FromID));
+            StarDustUserCurrency fromBalance = GetUserCurrency(transaction.FromID);
 
             // Ensure sender has enough money
             if ((!m_options.AllowBankerToHaveNoMoney ||
-                (m_options.AllowBankerToHaveNoMoney && m_options.BankerPrincipalID != new UUID(transaction.FromID))) &&
+                (m_options.AllowBankerToHaveNoMoney && m_options.BankerPrincipalID != transaction.FromID)) &&
                 fromBalance.Amount < transaction.Amount)
             {
                 transaction.Complete = 0;
