@@ -57,7 +57,6 @@ namespace StarDust.Currency.Grid
                 AddMoney);
         }
 
-		public StarDustRegionPostHandler regionPostHandler { get; set; }
         public string Name
         {
             get { return "IStarDustCurrencyConnector"; }
