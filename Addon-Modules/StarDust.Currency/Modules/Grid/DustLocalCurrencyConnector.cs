@@ -77,7 +77,7 @@ namespace StarDust.Currency.Grid
             while(!uint.TryParse(MainConsole.Instance.Prompt("Amount: ", "0"), out amount))
                 MainConsole.Instance.Info("Bad input, must be a number > 0");
 
-            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(new List<UUID> { UUID.Zero }, name);
             if(account == null)
             {
                 MainConsole.Instance.Info("No account found");
@@ -125,7 +125,7 @@ namespace StarDust.Currency.Grid
             while(!uint.TryParse(MainConsole.Instance.Prompt("Set User's Money Amount: ", "0"), out amount))
                 MainConsole.Instance.Info("Bad input, must be a number > 0");
 
-            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(new List<UUID>{UUID.Zero}, name);
             if(account == null)
             {
                 MainConsole.Instance.Info("No account found");
@@ -173,7 +173,7 @@ namespace StarDust.Currency.Grid
             while(!uint.TryParse(MainConsole.Instance.Prompt("Set User's Money Amount: ", "0"), out amount))
                 MainConsole.Instance.Info("Bad input, must be a number > 0");
 
-            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(UUID.Zero, name);
+            UserAccount account = m_registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(new List<UUID>{UUID.Zero}, name);
             if(account == null)
             {
                 MainConsole.Instance.Info("No account found");
