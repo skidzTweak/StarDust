@@ -25,7 +25,10 @@ namespace StarDust.Currency.Region
         public bool SendGridMessageRegionPostHandler(UUID regionID, UUID agentID, string message, UUID transactionID)
         {
             if (m_doRemoteCalls)
-                return (bool)DoRemote(regionID, agentID, message, transactionID);
+            {
+                object val = DoRemote(regionID, agentID, message, transactionID);
+                return val != null && (bool)val;
+            }
             return m_currenyService.StarDustRegionService.SendGridMessage(agentID, message, false, transactionID);
         }
 

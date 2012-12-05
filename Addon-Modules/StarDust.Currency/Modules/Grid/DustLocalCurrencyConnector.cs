@@ -633,6 +633,11 @@ namespace StarDust.Currency.Grid
                 trans = transaction;
                 return false;
             }
+            if (transaction.Amount == 0)
+            {
+                trans = transaction;
+                return true;
+            }
             if (transaction.ToID == UUID.Zero)
             {
                 m_log.Warn("[DustLocalCurrencyConnector] WriteHistory does not have to user data. ToName, and To Principle ID are required");
