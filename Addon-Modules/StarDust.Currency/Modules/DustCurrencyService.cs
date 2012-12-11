@@ -270,7 +270,8 @@ namespace StarDust.Currency
                     IRegionClientCapsService regionClient = client.GetRootCapsService();
                     if (regionClient != null)
                     {
-						regionPostHandler.ParcelDetailsRegionPostHandler(regionClient.Region.RegionID, client.AgentID);
+                        LandData land = regionPostHandler.ParcelDetailsRegionPostHandler(regionClient.Region.RegionID, client.AgentID);
+                        return land.ToOSD();
                     }
                 }
             }

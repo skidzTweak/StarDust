@@ -148,36 +148,48 @@ namespace StarDust.Currency
 
                 IClientCapsService client = m_dustCurrencyService.Registry.RequestModuleInterface<ICapsService>().GetClientCapsService(agentId);
                 OSDMap replyData = m_dustCurrencyService.GetParcelDetails(agentId);
-                if (client != null)
+                if (replyData == null)
                 {
-                    m_dustCurrencyService.SendGridMessage(agentId, String.Format(m_dustCurrencyService.m_options.MessgeBeforeBuyLand, profile.DisplayName, replyData.ContainsKey("SalePrice")), false, UUID.Zero);
-                }
-                if (replyData.ContainsKey("SalePrice"))
-                {
-                    // I think, this might be usable if they don't have the money
-                    // Hashtable currencytable = new Hashtable { { "estimatedCost", replyData["SalePrice"].AsInteger() } };
+                    landuse.Add("action", false);
 
-                    int landTierNeeded = (int)(currency.LandInUse + replyData["Area"].AsInteger());
-                    bool needsUpgrade = false;
-                    switch (profile.MembershipGroup)
-                    {
-                        case "Premium":
-                        case "":
-                            needsUpgrade = landTierNeeded >= currency.Tier;
-                            break;
-                        case "Banned":
-                            needsUpgrade = true;
-                            break;
-                    }
-                    // landuse.Add("action", m_DustCurrencyService.m_options.upgradeMembershipUri);
-                    landuse.Add("action", needsUpgrade);
-
-                    retparam.Add("success", true);
+                    retparam.Add("success", false);
                     retparam.Add("currency", currency);
                     retparam.Add("membership", level);
                     retparam.Add("landuse", landuse);
                     retparam.Add("confirm", "asdfajsdkfjasdkfjalsdfjasdf");
                     ret.Value = retparam;
+                }
+                else
+                {
+                    if (client != null)
+                        m_dustCurrencyService.SendGridMessage(agentId, String.Format(m_dustCurrencyService.m_options.MessgeBeforeBuyLand, profile.DisplayName, replyData.ContainsKey("SalePrice")), false, UUID.Zero);
+                    if (replyData.ContainsKey("SalePrice"))
+                    {
+                        // I think, this might be usable if they don't have the money
+                        // Hashtable currencytable = new Hashtable { { "estimatedCost", replyData["SalePrice"].AsInteger() } };
+
+                        int landTierNeeded = (int)(currency.LandInUse + replyData["Area"].AsInteger());
+                        bool needsUpgrade = false;
+                        switch (profile.MembershipGroup)
+                        {
+                            case "Premium":
+                            case "":
+                                needsUpgrade = landTierNeeded >= currency.Tier;
+                                break;
+                            case "Banned":
+                                needsUpgrade = true;
+                                break;
+                        }
+                        // landuse.Add("action", m_DustCurrencyService.m_options.upgradeMembershipUri);
+                        landuse.Add("action", needsUpgrade);
+
+                        retparam.Add("success", true);
+                        retparam.Add("currency", currency);
+                        retparam.Add("membership", level);
+                        retparam.Add("landuse", landuse);
+                        retparam.Add("confirm", "asdfajsdkfjasdkfjalsdfjasdf");
+                        ret.Value = retparam;
+                    }
                 }
             }
 
