@@ -317,7 +317,7 @@ namespace StarDust.Currency
             if (m_doRemoteCalls)
                 return (UserAccount)DoRemote(agentId);
             IUserAccountService userService = m_registry.RequestModuleInterface<IUserAccountService>();
-            UserAccount user = userService.GetUserAccount(new List<UUID> { UUID.Zero }, agentId);
+            UserAccount user = userService.GetUserAccount(null, agentId);
             if (user == null)
             {
                 m_log.Info("[DustCurrencyService] Unable to find agent.");
@@ -612,7 +612,7 @@ namespace StarDust.Currency
         public UUID StartPurchaseOrATMTransfer(UUID agentId, uint amountBuying, PurchaseType purchaseType, string gridName)
         {
             bool success = false;
-            UserAccount ua = Registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(new List<UUID> { UUID.Zero }, agentId);
+            UserAccount ua = Registry.RequestModuleInterface<IUserAccountService>().GetUserAccount(null, agentId);
             if (ua == null) return UUID.Zero;
             string agentName = ua.Name;
 

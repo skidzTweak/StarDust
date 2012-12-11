@@ -4,6 +4,7 @@ using Aurora.Simulation.Base;
 using Nini.Config;
 using OpenMetaverse;
 using StarDust.Currency.Interfaces;
+using System;
 
 namespace StarDust.Currency
 {
@@ -13,12 +14,13 @@ namespace StarDust.Currency
         private IRegistryCore m_registry;
         private IStarDustCurrencyService m_stardustservice;
         private StarDustConfig m_options;
+        private IConfigSource m_config;
 
         public int ClientPort
         {
             get
             {
-                return (int)MainServer.Instance.Port;
+                return m_config.Configs["Handlers"].GetInt("LLLoginHandlerPort", (int)MainServer.Instance.Port);
             }
         }
 
@@ -26,16 +28,33 @@ namespace StarDust.Currency
 
         public void Initialize(IConfigSource config, IRegistryCore registry)
         {
+            m_registry = registry;
+            m_config = config;
+            if (!CheckEnabled(config))
+                return;
+            m_enabled = true;
+            m_registry.RegisterModuleInterface<IMoneyModule>(this);
+        }
 
+        protected bool CheckEnabled(IConfigSource source)
+        {
+            // check to see if it should be enabled and then load the config
+            if (source == null) throw new ArgumentNullException("source");
+            IConfig economyConfig = source.Configs["StarDustCurrency"];
+            m_enabled = (economyConfig != null);
+            if (!m_enabled)
+            {
+                economyConfig = source.Configs["Currency"];
+                if (economyConfig != null)
+                    if (economyConfig.GetString("Module", "").ToLower() == "stardust")
+                        m_enabled = true;
+            }
+            return m_enabled;
         }
 
         public void Start(IConfigSource config, IRegistryCore registry)
         {
-            m_registry = registry;
             m_stardustservice = m_registry.RequestModuleInterface<IStarDustCurrencyService>() as DustCurrencyService;
-            if (m_stardustservice == null) return;
-            m_enabled = true;
-            m_registry.RegisterModuleInterface<IMoneyModule>(this);
         }
 
         public void FinishedStartup()

@@ -46,7 +46,7 @@ namespace StarDust.Currency.Grid
         {
             UUID userid = (UUID)parameters;
             IUserAccountService userService = m_registry.RequestModuleInterface<IUserAccountService>();
-            UserAccount user = userService.GetUserAccount(new List<UUID>{UUID.Zero}, userid);
+            UserAccount user = userService.GetUserAccount(null, userid);
             if (user == null) return null;
             if ((m_options.StipendsPremiumOnly) && ((user.UserFlags & 600) != 600)) return null;
 
@@ -78,7 +78,7 @@ namespace StarDust.Currency.Grid
             StipendsInfo si = new StipendsInfo();
             si.FromOSD((OSDMap)OSDParser.DeserializeJson(parameters.ToString()));
             IUserAccountService userService = m_registry.RequestModuleInterface<IUserAccountService>();
-            UserAccount ua = userService.GetUserAccount(new List<UUID>{UUID.Zero}, si.AgentID);
+            UserAccount ua = userService.GetUserAccount(null, si.AgentID);
             if ((ua != null) && (ua.UserFlags >= 0) && ((!m_options.StipendsPremiumOnly) || ((ua.UserLevel & 600) == 600)))
             {
                 if (m_options.GiveStipendsOnlyWhenLoggedIn)

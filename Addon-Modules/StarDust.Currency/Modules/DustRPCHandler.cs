@@ -30,6 +30,8 @@ namespace StarDust.Currency
             server.AddXmlRPCHandler("preflightBuyLandPrep", PreflightBuyLandPrepFunc);
             server.AddXmlRPCHandler("buyLandPrep", LandBuyFunc);
             server.AddXmlRPCHandler("getBalance", GetbalanceFunc);
+            server.AddXmlRPCHandler("/currency.php", GetbalanceFunc);
+            server.AddXmlRPCHandler("/landtool.php", GetbalanceFunc);
         }
 
         #region RPC Calls
