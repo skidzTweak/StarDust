@@ -6,6 +6,7 @@ using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using log4net;
+using Aurora.Framework.Modules;
 
 namespace StarDust.Currency.Interfaces
 {

@@ -13,6 +13,10 @@ using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
+using Aurora.Framework.Servers.HttpServer.Interfaces;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Utilities;
+using Aurora.Framework.Servers.HttpServer.Implementation;
 
 namespace StarDust.Currency.Grid
 {

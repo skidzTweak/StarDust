@@ -2,8 +2,11 @@
 using Aurora.Framework;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Region;
+using Aurora.Framework.Services;
+using Aurora.Framework.Modules;
+using Aurora.Framework.SceneInfo;
+using Aurora.Framework.PresenceInfo;
 
 namespace StarDust.Currency.Interfaces
 {
@@ -193,7 +196,6 @@ namespace StarDust.Currency.Interfaces
                    ;
         }
 
-
         /// <summary>
         /// 
         /// </summary>
@@ -202,26 +204,6 @@ namespace StarDust.Currency.Interfaces
         {
             return
                 new OSDMap
-                    {
-                        {"PrincipalID", PrincipalID},
-                        {"Amount", Amount},
-                        {"LandInUse", LandInUse},
-                        {"Tier", Tier},
-                        {"IsGroup", IsGroup},
-                        {"RestrictedAmount", RestrictedAmount},
-                        {"RestrictPurchaseAmount", RestrictPurchaseAmount},
-                        {"StipendsBalance", StipendsBalance}
-                    };
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public override Dictionary<string, object> ToKVP()
-        {
-            return
-                new Dictionary<string, object>
                     {
                         {"PrincipalID", PrincipalID},
                         {"Amount", Amount},
@@ -272,7 +254,6 @@ namespace StarDust.Currency.Interfaces
     public interface IStardustRegionService
     {
         ISceneChildEntity FindObject(UUID fromObjectID, out IScene scene);
-        IScene FindScene(UUID fromID);
         IClientAPI GetUserClient(UUID fromID);
         bool SendGridMessage(UUID toID, string message, bool goDeep, UUID transactionId);
     }

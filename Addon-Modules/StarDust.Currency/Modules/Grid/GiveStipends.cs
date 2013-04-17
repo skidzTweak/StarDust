@@ -6,10 +6,12 @@ using System.Timers;
 using Aurora.Framework;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency;
 using StarDust;
 using StarDust.Currency.Interfaces;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Services;
+using Aurora.Framework.Utilities;
 
 namespace StarDust.Currency.Grid
 {

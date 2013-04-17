@@ -12,8 +12,11 @@ using Aurora.Simulation.Base;
 using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
+using Aurora.Framework.Servers.HttpServer.Implementation;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Utilities;
+using Aurora.Framework.Servers.HttpServer.Interfaces;
 
 namespace StarDust.Currency.Grid
 {

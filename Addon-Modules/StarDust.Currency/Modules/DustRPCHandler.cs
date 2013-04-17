@@ -9,9 +9,14 @@ using Nini.Config;
 using Nwc.XmlRpc;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
 using log4net;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Servers.HttpServer.Interfaces;
+using Aurora.Framework.Services.ClassHelpers.Profile;
+using Aurora.Framework.Utilities;
+using Aurora.Framework.DatabaseInterfaces;
+using Aurora.Framework.Services;
 
 namespace StarDust.Currency
 {

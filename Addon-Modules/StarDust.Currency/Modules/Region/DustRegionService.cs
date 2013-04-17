@@ -5,19 +5,22 @@ using System.Reflection;
 using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
-using OpenSim.Region.Framework.Interfaces;
 using StarDust.Currency.Interfaces;
 using log4net;
+using Aurora.Framework.Modules;
+using Aurora.Framework.SceneInfo;
+using Aurora.Framework.PresenceInfo;
+using Aurora.Framework.Servers;
 
 namespace StarDust.Currency.Region
 {
-    public class DustRegionService : ISharedRegionModule, IStardustRegionService
+    public class DustRegionService : INonSharedRegionModule, IStardustRegionService
     {
         protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private bool m_enabled = true;
         private DustCurrencyService m_connector;
         private int m_objectCapacity;
-        private readonly List<IScene> m_scenes = new List<IScene>();
+        public IScene Scene { get; private set; }
         private StarDustConfig m_options;
 
         #region Implementation of IRegionModuleBase
@@ -52,7 +55,7 @@ namespace StarDust.Currency.Region
             }
             m_objectCapacity = scene.RegionInfo.ObjectCapacity;
             scene.RegisterModuleInterface<IStardustRegionService>(this);
-            m_scenes.Add(scene);
+            Scene = scene;
 
             scene.EventManager.OnNewClient += OnNewClient;
             scene.EventManager.OnClosingClient += OnClosingClient;
@@ -77,13 +80,11 @@ namespace StarDust.Currency.Region
             scene.UnregisterModuleInterface<IStardustRegionService>(this);
 
             MainServer.Instance.RemoveStreamHandler("POST", "/StarDustRegion");
-            m_scenes.Remove(scene);
+            Scene = null;
         }
 
         public void Close()
         {
-            // anything else I should do here?
-            m_scenes.Clear();
         }
 
         public void PostInitialise()
@@ -97,32 +98,19 @@ namespace StarDust.Currency.Region
 
         public ISceneChildEntity FindObject(UUID objectID, out IScene scene)
         {
-            foreach (IScene s in m_scenes)
-            {
-                ISceneChildEntity obj;
-                s.TryGetPart(objectID, out obj);
-                if (obj == null) continue;
-                scene = s;
-                return obj;
-            }
+            ISceneChildEntity obj;
+            Scene.TryGetPart(objectID, out obj);
             scene = null;
-            return null;
-        }
-
-        public IScene FindScene(UUID agentId)
-        {
-            return (from s in m_scenes
-                    let presence = s.GetScenePresence(agentId)
-                    where presence != null && !presence.IsChildAgent
-                    select s).FirstOrDefault();
+            if (obj == null) return null;
+            scene = Scene;
+            return obj;
         }
 
         public IClientAPI GetUserClient(UUID agentId)
         {
-            return (from scene in m_scenes
-                    where scene.GetScenePresence(agentId) != null
-                    where !scene.GetScenePresence(agentId).IsChildAgent
-                    select scene.GetScenePresence(agentId).ControllingClient).FirstOrDefault();
+            if(Scene.GetScenePresence(agentId) != null && !Scene.GetScenePresence(agentId).IsChildAgent)
+                return Scene.GetScenePresence(agentId).ControllingClient;
+            return null;
         }
 
         #endregion
@@ -192,7 +180,7 @@ namespace StarDust.Currency.Region
         {
             m_log.InfoFormat("[StarDustCurrency]: ClientOnParcelBuyPass {0}, {1}, {2}", client.Name, fromID,
                              parcelLocalId);
-            IScenePresence agentSp = FindScene(client.AgentId).GetScenePresence(client.AgentId);
+            IScenePresence agentSp = Scene.GetScenePresence(client.AgentId);
             IParcelManagementModule parcelManagement = agentSp.Scene.RequestModuleInterface<IParcelManagementModule>();
             ILandObject landParcel = null;
             List<ILandObject> land = parcelManagement.AllParcels();
@@ -243,10 +231,9 @@ namespace StarDust.Currency.Region
         public bool SendGridMessage(UUID toId, string message, bool goDeep, UUID transactionId)
         {
             if (!m_options.DisplayPayMessages) message = "";
-            IScene agentSp = FindScene(toId);
-            if (agentSp == null)
+            if (Scene == null)
                 return (goDeep) && m_connector.SendGridMessage(toId, message, false, transactionId);
-            IDialogModule dialogModule = agentSp.RequestModuleInterface<IDialogModule>();
+            IDialogModule dialogModule = Scene.RequestModuleInterface<IDialogModule>();
             if (dialogModule != null)
             {
                 IClientAPI icapiTo = GetUserClient(toId);

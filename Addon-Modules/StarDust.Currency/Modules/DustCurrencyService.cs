@@ -11,8 +11,13 @@ using log4net;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
+using Aurora.Framework.Services;
+using Aurora.Framework.Utilities;
+using Aurora.Framework.Modules;
+using Aurora.Framework.SceneInfo;
+using Aurora.Framework.PresenceInfo;
+using Aurora.Framework.Servers.HttpServer.Interfaces;
 
 namespace StarDust.Currency
 {
@@ -130,8 +135,7 @@ namespace StarDust.Currency
                 string password = handlerConfig.GetString("WireduxHandlerPassword",
                                                           handlerConfig.GetString("WebUIHandlerPassword", string.Empty));
 
-                IHttpServer httpServer = null;
-                httpServer = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
+                IHttpServer httpServer = registry.RequestModuleInterface<ISimulationBase>().GetHttpServer(
                         handlerConfig.GetUInt("WireduxHandlerPort", handlerConfig.GetUInt("WebUIHTTPPort", 8002)));
 
                 if (password != "")
@@ -270,7 +274,7 @@ namespace StarDust.Currency
                     IRegionClientCapsService regionClient = client.GetRootCapsService();
                     if (regionClient != null)
                     {
-                        LandData land = regionPostHandler.ParcelDetailsRegionPostHandler(regionClient.Region.RegionID, client.AgentID);
+                        LandData land = regionPostHandler.ParcelDetailsRegionPostHandler(regionClient.Region, client.AgentID);
                         return land.ToOSD();
                     }
                 }
@@ -296,7 +300,7 @@ namespace StarDust.Currency
                     IRegionClientCapsService regionClient = client.GetRootCapsService();
                     if (regionClient != null)
                     {
-                        regionPostHandler.SendGridMessageRegionPostHandler(regionClient.Region.RegionID, toId, message,
+                        regionPostHandler.SendGridMessageRegionPostHandler(regionClient.Region, toId, message,
                                                                      transactionId);
                     }
                 }
@@ -376,19 +380,11 @@ namespace StarDust.Currency
                 }
             }
 
-            if ((scene == null) && (StarDustRegionService != null))
-            {
-                scene = StarDustRegionService.FindScene(fromID);
-                if ((scene != null) && (transactionPosition.Length == 0))
-                    transactionPosition = scene.GetScenePresence(fromID).AbsolutePosition.ToString();
-            }
+            if (transactionPosition.Length == 0)
+                transactionPosition = scene.GetScenePresence(fromID).AbsolutePosition.ToString();
 
-            if ((scene == null) && (toID != UUID.Zero) && (StarDustRegionService != null))
-            {
-                scene = StarDustRegionService.FindScene(toID);
-                if ((scene != null) && (transactionPosition.Length == 0))
-                    transactionPosition = scene.GetScenePresence(toID).AbsolutePosition.ToString();
-            }
+            if(transactionPosition.Length == 0)
+                transactionPosition = scene.GetScenePresence(toID).AbsolutePosition.ToString();
 
             if (transactionPosition.Length == 0)
                 transactionPosition = "Unknown";

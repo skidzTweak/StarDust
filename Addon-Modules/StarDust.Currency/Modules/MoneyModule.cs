@@ -5,6 +5,10 @@ using Nini.Config;
 using OpenMetaverse;
 using StarDust.Currency.Interfaces;
 using System;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Services;
+using Aurora.Framework.PresenceInfo;
+using Aurora.Framework.Servers;
 
 namespace StarDust.Currency
 {

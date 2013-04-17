@@ -8,8 +8,11 @@ using log4net;
 using OpenMetaverse;
 using Nini.Config;
 using OpenMetaverse.StructuredData;
-using OpenSim.Services.Interfaces;
 using StarDust.Currency.Interfaces;
+using Aurora.Framework.Modules;
+using Aurora.Framework.Services;
+using Aurora.Framework.ConsoleFramework;
+using Aurora.Framework.Utilities;
 
 namespace StarDust.Currency.Grid
 {
