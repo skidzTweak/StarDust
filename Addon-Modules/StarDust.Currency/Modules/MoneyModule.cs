@@ -73,7 +73,7 @@ namespace StarDust.Currency
 
         public bool ObjectGiveMoney(UUID fromObjectID, UUID fromID, UUID toID, int amount)
         {
-            return m_stardustservice.UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPaysAvatar, UUID.Random());
+            return m_stardustservice.UserCurrencyTransfer(toID, fromID, UUID.Zero, fromObjectID, (uint)amount, "", TransactionType.ObjectPays, UUID.Random());
         }
 
         public bool Charge(IClientAPI from, int amount)
@@ -126,19 +126,11 @@ namespace StarDust.Currency
         #region event
 
         public event ObjectPaid OnObjectPaid;
-        public event PostObjectPaid OnPostObjectPaid;
 
-
-        public void FireObjectPaid(UUID uuid1, UUID uuid2, int p)
+        public void FireObjectPaid(UUID objectID, UUID agentID, int amount)
         {
             if (OnObjectPaid != null)
-                OnObjectPaid(uuid1, uuid2, p);
-        }
-
-        public void FirePostObjectPaid(uint localID, ulong regionHandle, UUID agentID, int amount)
-        {
-            if (OnPostObjectPaid != null)
-                OnPostObjectPaid(localID, regionHandle, agentID, amount);
+                OnObjectPaid(objectID, agentID, amount);
         }
 
         #endregion

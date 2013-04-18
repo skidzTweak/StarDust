@@ -468,7 +468,6 @@ namespace StarDust.Currency
                 return false;
             }
 
-            uint objectLocalId = 0;
             string toName = "";
             if (toID != UUID.Zero)
             {
@@ -499,7 +498,6 @@ namespace StarDust.Currency
                                 toName = ua3.Name;
                             }
                             toObjectName = ce.Name;
-                            objectLocalId = ce.LocalId;
                         }
                         else
                         {
@@ -552,7 +550,7 @@ namespace StarDust.Currency
 
             if (returnvalue)
             {
-                m_moneyModule.FireObjectPaid(toObjectID, fromID, int.Parse(amount.ToString()));
+                m_moneyModule.FireObjectPaid(toObjectID, fromID, (int)amount);
             }
 
             #endregion
@@ -576,7 +574,7 @@ namespace StarDust.Currency
                     SendGridMessage(transaction.ToID,
                                         "You Were Paid $" + transaction.Amount + " by " + transaction.FromName, !isgridServer, transaction.TransactionID);
                 }
-                else if (transaction.TypeOfTrans == TransactionType.UploadFee)
+                else if (transaction.TypeOfTrans == TransactionType.UploadCharge)
                 {
                     SendGridMessage(transaction.FromID, "You Paid $" + transaction.Amount + " to upload", !isgridServer, transaction.TransactionID);
                 }
@@ -595,7 +593,7 @@ namespace StarDust.Currency
 
             if ((toObjectID != UUID.Zero) && (!isgridServer))
             {
-                m_moneyModule.FirePostObjectPaid(objectLocalId, regionHandel, fromID, int.Parse(amount.ToString()));
+                m_moneyModule.FireObjectPaid(toObjectID, fromID, (int)amount);
             }
 
             #endregion

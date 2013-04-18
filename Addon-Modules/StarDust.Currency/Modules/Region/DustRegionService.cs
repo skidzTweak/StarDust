@@ -198,7 +198,7 @@ namespace StarDust.Currency.Region
                             landParcel.LandData.PassPrice);
                 bool giveResult = m_connector.UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
                                                        (uint)landParcel.LandData.PassPrice, "Parcel Pass",
-                                                       TransactionType.LandPassFee, UUID.Random());
+                                                       TransactionType.LandPassSale, UUID.Random());
                 if (giveResult)
                 {
                     ParcelManager.ParcelAccessEntry entry
