@@ -39,12 +39,11 @@
   
   <Reference name="Aurora.DataManager"/>
   <Reference name="Aurora.Framework"/>
+  <Reference name="Aurora.Region"/>
   <Reference name="Aurora.Services.DataService"/>
   <Reference name="Aurora.Simulation.Base"/>
-  <Reference name="OpenSim.Region.Framework"/>
 
   <Reference name="DotNetOpenId" path="../../../bin/"/>
-  <Reference name="log4net" path="../../../bin/"/>
   <Reference name="Nini" path="../../../bin/"/>
   <Reference name="OpenMetaverse" path="../../../bin/"/>
   <Reference name="OpenMetaverse.StructuredData" path="../../../bin/"/>

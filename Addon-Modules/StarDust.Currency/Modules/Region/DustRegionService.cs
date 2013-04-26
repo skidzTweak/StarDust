@@ -6,17 +6,16 @@ using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
 using StarDust.Currency.Interfaces;
-using log4net;
 using Aurora.Framework.Modules;
 using Aurora.Framework.SceneInfo;
 using Aurora.Framework.PresenceInfo;
 using Aurora.Framework.Servers;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency.Region
 {
     public class DustRegionService : INonSharedRegionModule, IStardustRegionService
     {
-        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private bool m_enabled = true;
         private DustCurrencyService m_connector;
         private int m_objectCapacity;
@@ -61,7 +60,7 @@ namespace StarDust.Currency.Region
             scene.EventManager.OnClosingClient += OnClosingClient;
             scene.EventManager.OnValidateBuyLand += ValidateLandBuy;
 
-            m_log.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0} ", MainServer.Instance.ServerURI);
+            MainConsole.Instance.DebugFormat("[DustCurrencyService] DustCurrencyService Initialize on {0} ", MainServer.Instance.ServerURI);
         }
 
         public void RegionLoaded(IScene scene)
@@ -178,7 +177,7 @@ namespace StarDust.Currency.Region
         /// <param name="parcelLocalId"></param>
         private void ClientOnParcelBuyPass(IClientAPI client, UUID fromID, int parcelLocalId)
         {
-            m_log.InfoFormat("[StarDustCurrency]: ClientOnParcelBuyPass {0}, {1}, {2}", client.Name, fromID,
+            MainConsole.Instance.InfoFormat("[StarDustCurrency]: ClientOnParcelBuyPass {0}, {1}, {2}", client.Name, fromID,
                              parcelLocalId);
             IScenePresence agentSp = Scene.GetScenePresence(client.AgentId);
             IParcelManagementModule parcelManagement = agentSp.Scene.RequestModuleInterface<IParcelManagementModule>();
@@ -193,7 +192,7 @@ namespace StarDust.Currency.Region
             }
             if (landParcel != null)
             {
-                m_log.Debug("[StarDustCurrency]: Base account: " + landParcel.LandData.OwnerID + " Agent ID: " + fromID +
+                MainConsole.Instance.Debug("[StarDustCurrency]: Base account: " + landParcel.LandData.OwnerID + " Agent ID: " + fromID +
                             " Price:" +
                             landParcel.LandData.PassPrice);
                 bool giveResult = m_connector.UserCurrencyTransfer(landParcel.LandData.OwnerID, fromID, UUID.Zero, UUID.Zero,
@@ -215,7 +214,7 @@ namespace StarDust.Currency.Region
             }
             else
             {
-                m_log.ErrorFormat("[StarDustCurrency]: No parcel found for parcel id {0}", parcelLocalId);
+                MainConsole.Instance.ErrorFormat("[StarDustCurrency]: No parcel found for parcel id {0}", parcelLocalId);
                 agentSp.ControllingClient.SendAgentAlertMessage("Opps, the internet blew up! Unable to find parcel.", false);
             }
         }

@@ -7,7 +7,6 @@ using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
 using StarDust.Currency.Grid;
 using StarDust.Currency.Region;
-using log4net;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
@@ -18,6 +17,7 @@ using Aurora.Framework.Modules;
 using Aurora.Framework.SceneInfo;
 using Aurora.Framework.PresenceInfo;
 using Aurora.Framework.Servers.HttpServer.Interfaces;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency
 {
@@ -32,7 +32,6 @@ namespace StarDust.Currency
     {
         public IStarDustCurrencyConnector m_database;
         public StarDustConfig m_options = null;
-        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         protected bool m_enabled;
         protected const string Version = "0.19";
         private DustRPCHandler m_rpc;
@@ -90,6 +89,7 @@ namespace StarDust.Currency
 
         public void FinishedStartup()
         {
+            if (m_registry == null) return;
             if (!m_doRemoteCalls)
             {
                 m_scheduler.Register("RestrictedCurrencyPurchaseRemove", RestrictedCurrencyPurchaseRemove_Event);
@@ -152,26 +152,26 @@ namespace StarDust.Currency
 
         protected void DisplayLogo()
         {
-            m_log.Warn("====================================================================");
-            m_log.Warn("====================== STARDUST CURRENCY 2012 ======================");
-            m_log.Warn("====================================================================");
-            m_log.Warn("Stardust TOS/License Agreement - READ ME <<<<<<<<<<<<<<<<<<<<<<<<<<<");
-            m_log.Warn("====================================================================");
-            m_log.Warn("* Do NOT use this module in a production environment. ");
-            m_log.Warn("* Do NOT use this module with real money. ");
-            m_log.Warn("* This module is for educational purposes only, and can NOT be");
-            m_log.Warn("  used with real money or in a production enviroment!");
-            m_log.Warn("* By using this module you agree that Skidz Tweak, Aurora-Sim, or");
-            m_log.Warn("  other contributing developers ARE IN NO WAY responsible for any");
-            m_log.Warn("  damages that may occur as a result of using this module.");
-            m_log.Warn("* By using this module you agree that you understand the risks of");
-            m_log.Warn("  running this module and are fully willing to accept those risks");
-            m_log.Warn("  and any consequences that may occur.");
-            m_log.Warn("* By downing and using this module you are agreeing to everything");
-            m_log.Warn("  listed above. If you do not agree, stop useing it.");
-            m_log.Warn("====================================================================");
-            m_log.Warn("[StarDustStartup]: Version: " + Version + " Beta\n");
-            m_log.Warn("====================================================================");
+            MainConsole.Instance.Warn("====================================================================");
+            MainConsole.Instance.Warn("====================== STARDUST CURRENCY 2012 ======================");
+            MainConsole.Instance.Warn("====================================================================");
+            MainConsole.Instance.Warn("Stardust TOS/License Agreement - READ ME <<<<<<<<<<<<<<<<<<<<<<<<<<<");
+            MainConsole.Instance.Warn("====================================================================");
+            MainConsole.Instance.Warn("* Do NOT use this module in a production environment. ");
+            MainConsole.Instance.Warn("* Do NOT use this module with real money. ");
+            MainConsole.Instance.Warn("* This module is for educational purposes only, and can NOT be");
+            MainConsole.Instance.Warn("  used with real money or in a production enviroment!");
+            MainConsole.Instance.Warn("* By using this module you agree that Skidz Tweak, Aurora-Sim, or");
+            MainConsole.Instance.Warn("  other contributing developers ARE IN NO WAY responsible for any");
+            MainConsole.Instance.Warn("  damages that may occur as a result of using this module.");
+            MainConsole.Instance.Warn("* By using this module you agree that you understand the risks of");
+            MainConsole.Instance.Warn("  running this module and are fully willing to accept those risks");
+            MainConsole.Instance.Warn("  and any consequences that may occur.");
+            MainConsole.Instance.Warn("* By downing and using this module you are agreeing to everything");
+            MainConsole.Instance.Warn("  listed above. If you do not agree, stop useing it.");
+            MainConsole.Instance.Warn("====================================================================");
+            MainConsole.Instance.Warn("[StarDustStartup]: Version: " + Version + " Beta\n");
+            MainConsole.Instance.Warn("====================================================================");
         }
 
         protected bool CheckEnabled(IConfigSource source)
@@ -281,7 +281,7 @@ namespace StarDust.Currency
             }
             catch (Exception e)
             {
-                m_log.Error("[CURRENCY CONNECTOR] UserCurrencyUpdate to m_ServerURI", e);
+                MainConsole.Instance.ErrorFormat("[CURRENCY CONNECTOR] UserCurrencyUpdate to m_ServerURI: {0}", e.ToString());
             }
             return null;
         }
@@ -307,7 +307,7 @@ namespace StarDust.Currency
             }
             catch (Exception e)
             {
-                m_log.Error("[CURRENCY CONNECTOR] UserCurrencyUpdate to m_ServerURI", e);
+                MainConsole.Instance.ErrorFormat("[CURRENCY CONNECTOR] UserCurrencyUpdate to m_ServerURI: {0}", e.ToString());
             }
             return false;
         }
@@ -325,7 +325,7 @@ namespace StarDust.Currency
             UserAccount user = userService.GetUserAccount(null, agentId);
             if (user == null)
             {
-                m_log.Info("[DustCurrencyService] Unable to find agent.");
+                MainConsole.Instance.Info("[DustCurrencyService] Unable to find agent.");
                 return null;
             }
             return user;
@@ -464,7 +464,7 @@ namespace StarDust.Currency
 
             if (fromID == UUID.Zero)
             {
-                m_log.Debug("[StarDust MoneyModule.cs] Could not find who the money was coming from.");
+                MainConsole.Instance.Debug("[StarDust MoneyModule.cs] Could not find who the money was coming from.");
                 return false;
             }
 

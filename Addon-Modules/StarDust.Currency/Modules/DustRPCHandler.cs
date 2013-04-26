@@ -10,21 +10,19 @@ using Nwc.XmlRpc;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
-using log4net;
 using Aurora.Framework.Modules;
 using Aurora.Framework.Servers.HttpServer.Interfaces;
 using Aurora.Framework.Services.ClassHelpers.Profile;
 using Aurora.Framework.Utilities;
 using Aurora.Framework.DatabaseInterfaces;
 using Aurora.Framework.Services;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency
 {
     class DustRPCHandler
     {
         private readonly DustCurrencyService m_dustCurrencyService;
-        protected static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
 
         public DustRPCHandler(DustCurrencyService mainService, IConfigSource source, IRegistryCore registry)
         {
@@ -43,12 +41,12 @@ namespace StarDust.Currency
 
         public XmlRpcResponse GetbalanceFunc(XmlRpcRequest request, IPEndPoint ep)
         {
-            m_log.Error("Stardust Remote procdure calls GetbalanceFunc was called.");
+            MainConsole.Instance.Error("Stardust Remote procdure calls GetbalanceFunc was called.");
             throw new NotImplementedException();
         }
         public XmlRpcResponse LandBuyFunc(XmlRpcRequest request, IPEndPoint ep)
         {
-            m_log.Error("Stardust Remote procdure calls LandBuyFunc was called.");
+            MainConsole.Instance.Error("Stardust Remote procdure calls LandBuyFunc was called.");
             throw new NotImplementedException();
         }
 

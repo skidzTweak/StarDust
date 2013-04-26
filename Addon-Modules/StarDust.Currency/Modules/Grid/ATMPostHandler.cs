@@ -9,7 +9,6 @@ using System.Timers;
 using Aurora.Framework;
 using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
-using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
@@ -17,13 +16,12 @@ using Aurora.Framework.Servers.HttpServer.Interfaces;
 using Aurora.Framework.Modules;
 using Aurora.Framework.Utilities;
 using Aurora.Framework.Servers.HttpServer.Implementation;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency.Grid
 {
     class StarDustCurrencyPostHandlerATM : BaseRequestHandler, IStreamedRequestHandler
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private readonly DustCurrencyService m_starDustCurrencyService;
         private readonly IRegistryCore m_registry;
         private readonly StarDustConfig m_options;
@@ -65,14 +63,14 @@ namespace StarDust.Currency.Grid
                         string[] info = Uri.UnescapeDataString(responseFromServer.Trim()).Split('|');
                         if (Util.Md5Hash(info[0]) != m_password)
                         {
-                            m_log.ErrorFormat("[StarDustATM] ATM response was not correct in task checker - {0}", info);
+                            MainConsole.Instance.ErrorFormat("[StarDustATM] ATM response was not correct in task checker - {0}", info);
                             continue;
                         }
                         
                         int per_dollar = m_starDustCurrencyService.m_database.GetGridConversionFactor(gridAtm.GridName);
                         if (per_dollar == 0)
                         {
-                            m_log.ErrorFormat("[StarDustATM] Can not find grid named {0} in stardust_atm_grids.", gridAtm.GridName);
+                            MainConsole.Instance.ErrorFormat("[StarDustATM] Can not find grid named {0} in stardust_atm_grids.", gridAtm.GridName);
                             continue;
                         }
                         
@@ -111,12 +109,12 @@ namespace StarDust.Currency.Grid
             string ipa = httpRequest.RemoteIPEndPoint.Address.ToString();
             if (BanIPs.Contains(ipa))
             {
-                m_log.ErrorFormat("[StarDustATM] A Banned IPAddress attempted access ATM {0}", ipa);
+                MainConsole.Instance.ErrorFormat("[StarDustATM] A Banned IPAddress attempted access ATM {0}", ipa);
                 return new UTF8Encoding().GetBytes("");
             }
             if ((AllowedIPs.Count > 0) && (!AllowedIPs.Contains(ipa)) && (AllowedIPs[0] != ""))
             {
-                m_log.ErrorFormat("[StarDustATM] This IP is not allowed {0}", ipa);
+                MainConsole.Instance.ErrorFormat("[StarDustATM] This IP is not allowed {0}", ipa);
                 return new UTF8Encoding().GetBytes("");
             } 
 
@@ -125,7 +123,7 @@ namespace StarDust.Currency.Grid
             sr.Close();
             body = body.Trim();
 
-            //m_log.DebugFormat("[XXX]: query String: {0}", body);
+            //MainConsole.Instance.DebugFormat("[XXX]: query String: {0}", body);
             try
             {
                 string[] info = Uri.UnescapeDataString(body).Split('|');
@@ -136,7 +134,7 @@ namespace StarDust.Currency.Grid
                     {
                         if (BanList.Contains(hisID))
                         {
-                            m_log.ErrorFormat("[StarDustATM] This object is banned for to many tried {0}", hisID);
+                            MainConsole.Instance.ErrorFormat("[StarDustATM] This object is banned for to many tried {0}", hisID);
                             return new UTF8Encoding().GetBytes("");
                         }
                         string weburl = info[1];
@@ -171,7 +169,7 @@ namespace StarDust.Currency.Grid
                                 }
                                 else
                                 {
-                                    m_log.ErrorFormat("[StarDustATM] Failed to validate ATM {0} - {1}", ipa, hisID);
+                                    MainConsole.Instance.ErrorFormat("[StarDustATM] Failed to validate ATM {0} - {1}", ipa, hisID);
                                     // need to track the number of tries
                                     bool wasfound = false;
                                     foreach (GridATM gridAtm in ATMs.Where(gridAtm => gridAtm.ID == hisID))
@@ -182,8 +180,8 @@ namespace StarDust.Currency.Grid
                                         if (gridAtm.Tries <= numberofTries) continue;
                                         BanIPs.Add(ipa);
                                         BanList.Add(hisID);
-                                        m_log.ErrorFormat("[StarDustATM] Has banned the following IP for not responding correctly {0}", ipa);
-                                        m_log.ErrorFormat("[StarDustATM] Has banned the following object ID for not responding correctly {0}", hisID);
+                                        MainConsole.Instance.ErrorFormat("[StarDustATM] Has banned the following IP for not responding correctly {0}", ipa);
+                                        MainConsole.Instance.ErrorFormat("[StarDustATM] Has banned the following object ID for not responding correctly {0}", hisID);
                                     }
                                     if (!wasfound)
                                     {
@@ -197,23 +195,23 @@ namespace StarDust.Currency.Grid
                         }
                         else
                         {
-                            m_log.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
+                            MainConsole.Instance.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
                         }
                     }
                     else
                     {
-                        m_log.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
+                        MainConsole.Instance.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
                     }
                 }
                 else
                 {
-                    m_log.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
+                    MainConsole.Instance.ErrorFormat("[StarDustATM] The correct information was not passed in - {0}", body);
                 }
                 return new UTF8Encoding().GetBytes("");
             }
             catch (Exception e)
             {
-                m_log.Error("[StarDustATM] Error processing method", e);
+                MainConsole.Instance.ErrorFormat("[StarDustATM] Error processing method: {0}", e.ToString());
             }
             return new UTF8Encoding().GetBytes("");
         }

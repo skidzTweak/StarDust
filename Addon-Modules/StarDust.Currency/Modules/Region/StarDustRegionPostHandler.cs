@@ -6,7 +6,6 @@ using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
 using Nini.Config;
 using OpenMetaverse;
-using log4net;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
 using Aurora.Framework.SceneInfo;
@@ -19,7 +18,6 @@ namespace StarDust.Currency.Region
 {
     public class StarDustRegionPostHandler : IService, IStarDustRegionPostHandler
     {
-        private readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private IRegistryCore m_registry;
         private IStarDustCurrencyService m_currencyService;
         private ISyncMessagePosterService m_syncMessagePosterService;

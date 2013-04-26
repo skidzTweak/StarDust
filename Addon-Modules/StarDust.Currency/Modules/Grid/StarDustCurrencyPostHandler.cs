@@ -9,7 +9,6 @@ using System.Web;
 using Aurora.Framework;
 using Aurora.Framework.Servers.HttpServer;
 using Aurora.Simulation.Base;
-using log4net;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using StarDust.Currency.Interfaces;
@@ -17,13 +16,12 @@ using Aurora.Framework.Servers.HttpServer.Implementation;
 using Aurora.Framework.Modules;
 using Aurora.Framework.Utilities;
 using Aurora.Framework.Servers.HttpServer.Interfaces;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency.Grid
 {
     class StarDustCurrencyPostHandlerWebUI : BaseRequestHandler, IStreamedRequestHandler
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private readonly DustCurrencyService m_starDustCurrencyService;
         private readonly IRegistryCore m_registry;
         private readonly StarDustConfig m_options;
@@ -49,7 +47,7 @@ namespace StarDust.Currency.Grid
             sr.Close();
             body = body.Trim();
 
-            //m_log.DebugFormat("[XXX]: query String: {0}", body);
+            //MainConsole.Instance.DebugFormat("[XXX]: query String: {0}", body);
             try
             {
                 OSDMap map = (OSDMap)OSDParser.DeserializeJson(body);
@@ -76,12 +74,12 @@ namespace StarDust.Currency.Grid
                 }
                 else
                 {
-                    m_log.Error("[Stardust] Web password did not match.");
+                    MainConsole.Instance.Error("[Stardust] Web password did not match.");
                 }
             }
             catch (Exception e)
             {
-                m_log.Error("[Stardust] Error processing method", e);
+                MainConsole.Instance.ErrorFormat("[Stardust] Error processing method: {0}", e.ToString());
             }
             OSDMap resp = new OSDMap { { "response", OSD.FromString("Failed") } };
             string xmlString = OSDParser.SerializeJsonString(resp);
@@ -240,7 +238,7 @@ namespace StarDust.Currency.Grid
             }
             catch (Exception e)
             {
-                m_log.Error("[StarDustCurrencyPostHandlerWebUI] Error connecting to paypal", e);
+                MainConsole.Instance.ErrorFormat("[StarDustCurrencyPostHandlerWebUI] Error connecting to paypal: {0}", e.ToString());
             }
             finally
             {

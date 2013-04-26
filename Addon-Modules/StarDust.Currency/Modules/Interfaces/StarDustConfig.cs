@@ -5,17 +5,13 @@ using Aurora.Framework;
 using Nini.Config;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
-using log4net;
 using Aurora.Framework.Modules;
+using Aurora.Framework.ConsoleFramework;
 
 namespace StarDust.Currency.Interfaces
 {
     public class StarDustConfig : IDataTransferable
     {
-        private readonly ILog m_log =
-                LogManager.GetLogger (
-                MethodBase.GetCurrentMethod ().DeclaringType);
-
         #region declarations
         private int m_priceEnergyUnit = 100;
         private int m_priceObjectClaim = 10;
@@ -91,7 +87,7 @@ namespace StarDust.Currency.Interfaces
                 }
                 catch(Exception ex)
                 {
-                    m_log.Warn ("[StarDust]: Exception reading economy config: " + ex.ToString ());
+                    MainConsole.Instance.Warn ("[StarDust]: Exception reading economy config: " + ex.ToString ());
                 }
             }
         }
@@ -121,7 +117,7 @@ namespace StarDust.Currency.Interfaces
                 }
                 catch (Exception ex)
                 {
-                    m_log.Warn ("[StarDust]: Exception toOSD() config: " + ex.ToString ());
+                    MainConsole.Instance.Warn ("[StarDust]: Exception toOSD() config: " + ex.ToString ());
                 }
             }
             return returnvalue;
@@ -148,7 +144,7 @@ namespace StarDust.Currency.Interfaces
                     }
                     catch (Exception ex)
                     {
-                        m_log.Warn("[StarDust]: Exception reading fromOSD() config: " + ex.ToString());
+                        MainConsole.Instance.Warn("[StarDust]: Exception reading fromOSD() config: " + ex.ToString());
                     }
                 }
             }

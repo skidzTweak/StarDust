@@ -4,7 +4,6 @@ using System.Reflection;
 using Aurora.DataManager;
 using Aurora.Framework;
 using StarDust.Currency.Region;
-using log4net;
 using OpenMetaverse;
 using Nini.Config;
 using OpenMetaverse.StructuredData;
@@ -18,7 +17,6 @@ namespace StarDust.Currency.Grid
 {
     public class DustLocalCurrencyConnector : IStarDustCurrencyConnector
     {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private IGenericData m_gd;
         private bool m_enabled;
         private StarDustConfig m_options;
@@ -336,7 +334,7 @@ namespace StarDust.Currency.Grid
                 return true;
             }
             transaction = trans;
-            m_log.WarnFormat("[DustLocalCurrencyConnector] Purchase ID {0} is already complete", purchaseID);
+            MainConsole.Instance.WarnFormat("[DustLocalCurrencyConnector] Purchase ID {0} is already complete", purchaseID);
             return false;
         }
 
@@ -357,7 +355,7 @@ namespace StarDust.Currency.Grid
 
             if (query.Count == 0)
             {
-                m_log.Warn("[DustLocalCurrencyConnector] Purchase ID not found");
+                MainConsole.Instance.Warn("[DustLocalCurrencyConnector] Purchase ID not found");
                 return new Transaction();
             }
             return new Transaction
@@ -401,14 +399,14 @@ namespace StarDust.Currency.Grid
                                                          }, null, null, null);
                 if (query.Count != 10)
                 {
-                    m_log.Error("No such purchase ID");
+                    MainConsole.Instance.Error("No such purchase ID");
                     transaction = null;
                     purchaseType = -1;
                     return false;
                 }
                 if (query[1] == "1")
                 {
-                    m_log.Error("This purchase has already been completed");
+                    MainConsole.Instance.Error("This purchase has already been completed");
                     transaction = null;
                     purchaseType = -1;
                     return false;
@@ -526,7 +524,7 @@ namespace StarDust.Currency.Grid
             }
             else
             {
-                m_log.ErrorFormat("[Stardust Currency] The paypal response did not contain the field 'custom' - paypal data: {0} ", payPalResponse);
+                MainConsole.Instance.ErrorFormat("[Stardust Currency] The paypal response did not contain the field 'custom' - paypal data: {0} ", payPalResponse);
             }
             return false;
         }
@@ -632,7 +630,7 @@ namespace StarDust.Currency.Grid
             // since this is always the first thing that happens.. might as well confirm it here
             if (transaction.FromID == UUID.Zero)
             {
-                m_log.Warn("[DustLocalCurrencyConnector] WriteHistory does not have from user data. FromName, and From Principle ID are required");
+                MainConsole.Instance.Warn("[DustLocalCurrencyConnector] WriteHistory does not have from user data. FromName, and From Principle ID are required");
                 trans = transaction;
                 return false;
             }
@@ -643,7 +641,7 @@ namespace StarDust.Currency.Grid
             }
             if (transaction.ToID == UUID.Zero)
             {
-                m_log.Warn("[DustLocalCurrencyConnector] WriteHistory does not have to user data. ToName, and To Principle ID are required");
+                MainConsole.Instance.Warn("[DustLocalCurrencyConnector] WriteHistory does not have to user data. ToName, and To Principle ID are required");
                 trans = transaction;
                 return false;
             }
